@@ -19,12 +19,11 @@ app = FastAPI(
     description="Production-grade healthcare documentation platform",
     version=settings.VERSION
 )
-
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "https://mediscribe-kohl.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
