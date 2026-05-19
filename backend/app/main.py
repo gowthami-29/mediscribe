@@ -38,6 +38,7 @@ from app.models.consultation import Consultation
 from app.models.report import Report
 from app.models.analysis import Analysis
 from app.models.audit import AuditLog
+from app.models.radiology import RadiologyReport
 
 # routers
 from app.api.auth import router as auth_router
@@ -48,12 +49,13 @@ from app.api.analysis import router as analysis_router
 from app.api.analytics import router as analytics_router
 from app.api.audit import router as audit_router
 from app.api.speech import router as speech_router
+from app.api.radiology import router as radiology_router
 
 # Create all database tables (Note: In production with migrations, this might be handled by Alembic)
 @app.on_event("startup")
 def on_startup():
     logger.info("Starting MediScribe API...")
-    #Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 api_v1 = APIRouter(prefix="/api/v1")
 
@@ -65,7 +67,7 @@ api_v1.include_router(report_router, prefix="/reports", tags=["Reports"])
 api_v1.include_router(analysis_router, prefix="/ai-analysis", tags=["AI Analysis"])
 api_v1.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 api_v1.include_router(audit_router, prefix="/audit", tags=["Audit Logs"])
-
+api_v1.include_router(radiology_router,prefix="/radiology",tags=["Radiology"])
 app.include_router(api_v1)
 
 @app.get("/")

@@ -17,3 +17,8 @@ python-docx
 reportlab
 langchain-text-splitters
 pgvector
+pillow
+pydicom
+langchain
+langchain-openai
+tiktoken
