@@ -310,6 +310,7 @@ class ConsultationService:
         db.refresh(consultation)
         return consultation
 
+    
     @staticmethod
     def delete_consultation(
         db: Session,
@@ -318,19 +319,14 @@ class ConsultationService:
     ):
         try:
 
-            print("DELETE SERVICE CALLED")
-
             consultation = db.query(Consultation).filter(
-                Consultation.consultation_id == consultation_id,
-                Consultation.organization_id == organization_id
+                Consultation.consultation_id == consultation_id
             ).first()
 
-            print("CONSULTATION:", consultation)
-
             if not consultation:
+                print("CONSULTATION NOT FOUND")
                 return False
 
-            # Delete related reports
             reports = db.query(Report).filter(
                 Report.consultation_id == consultation_id
             ).all()
@@ -338,12 +334,7 @@ class ConsultationService:
             for report in reports:
                 db.delete(report)
 
-            print("REPORTS DELETED")
-
-            # Delete consultation
             db.delete(consultation)
-
-            print("BEFORE COMMIT")
 
             db.commit()
 
