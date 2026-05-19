@@ -311,327 +311,50 @@ class ConsultationService:
         return consultation
 
     @staticmethod
-    def end_consultation(
+    def delete_consultation(
         db: Session,
         consultation_id: str,
-        organization_id: str,
-        audio_file_path: str
+        organization_id: str
     ):
-
-        consultation = db.query(Consultation).filter(
-            Consultation.consultation_id == consultation_id,
-            Consultation.organization_id == organization_id
-        ).first()
-
-        if not consultation:
-            return None
-
-        consultation.status = "processing"
-
-        consultation.ended_at = datetime.now(timezone.utc)
-
-        # Duration
-        if consultation.started_at:
-
-            delta = (
-                consultation.ended_at -
-                consultation.started_at
-            )
-
-            consultation.duration_minutes = int(
-                delta.total_seconds() / 60
-            )
-
         try:
 
-            # Save audio path
-            consultation.audio_file_id = audio_file_path
-
-            # Generate checksum
-            with open(audio_file_path, "rb") as f:
-
-                raw_audio = f.read()
-
-            checksum = hashlib.sha256(
-                raw_audio
-            ).hexdigest()
-
-            consultation.audio_checksum = checksum
-
-            # =========================
-            # ASSEMBLYAI TRANSCRIPTION
-            # =========================
-
-            from app.core.speech import (
-                transcribe_audio,
-                upload_to_b2
-            )
-
-            try:
-
-                result = transcribe_audio(
-                    audio_file_path
-                )
-
-            except Exception as transcription_error:
-
-                print(
-                    f"TRANSCRIPTION ERROR: {transcription_error}"
-                )
-
-                db.rollback()
-
-                result = {
-                    "text": "",
-                    "status": "failed",
-                    "confidence": 0
-                }
-
-            print("TRANSCRIPTION RESULT:", result)
-
-            consultation.transcription_text = (
-                result.get("text", "")
-            )
-
-            consultation.transcription_status = (
-                result.get("status", "failed")
-            )
-
-            consultation.transcription_confidence = (
-                result.get("confidence", 0)
-            )
-
-            # =========================
-            # B2 UPLOAD
-            # =========================
-
-            try:
-
-                b2_key = upload_to_b2(
-                    audio_file_path
-                )
-
-                consultation.audio_file_id = b2_key
-
-                print(
-                    f"[B2] Uploaded successfully: {b2_key}"
-                )
-
-            except Exception as b2_err:
-
-                print(
-                    f"[B2] Upload failed: {b2_err}"
-                )
-
-            # =========================
-            # SOAP GENERATION
-            # =========================
-
-            if result["status"] == "completed":
-
-                from app.core.ai import (
-                    generate_soap,
-                    check_drug_interactions
-                )
-
-                print("GENERATING SOAP...")
-
-                ai_output = generate_soap(
-                    consultation.transcription_text or ""
-                )
-
-                print("AI OUTPUT:", ai_output)
-
-                try:
-
-                    soap = json.loads(ai_output)
-
-                    if soap.get("_error"):
-                        raise ValueError(
-                            soap["_error"]
-                        )
-
-                    print(
-                        "SOAP PARSED SUCCESSFULLY"
-                    )
-
-                except Exception as e:
-
-                    print(
-                        f"SOAP JSON ERROR: {e}"
-                    )
-
-                    consultation.status = (
-                        "failed_soap"
-                    )
-
-                    db.commit()
-
-                    return consultation
-
-                meds = soap.get(
-                    "medications",
-                    []
-                )
-
-                interactions = (
-                    check_drug_interactions(meds)
-                    if meds else []
-                )
-
-                # =========================
-                # CREATE / UPDATE REPORT
-                # =========================
-
-                existing_report = db.query(
-                    Report
-                ).filter(
-                    Report.consultation_id ==
-                    consultation.consultation_id,
-                    Report.organization_id ==
-                    organization_id
-                ).first()
-
-                report = (
-                    existing_report
-                    or
-                    Report(
-                        consultation_id=
-                        consultation.consultation_id,
-
-                        patient_id=
-                        consultation.patient_id,
-
-                        user_id=
-                        consultation.user_id,
-
-                        organization_id=
-                        organization_id,
-
-                        status="draft"
-                    )
-                )
-
-                report.subjective = (
-                    ConsultationService
-                    ._stringify_soap_value(
-                        soap.get("subjective")
-                    )
-                )
-
-                report.objective = (
-                    ConsultationService
-                    ._stringify_soap_value(
-                        soap.get("objective")
-                    )
-                )
-
-                report.assessment = (
-                    ConsultationService
-                    ._stringify_soap_value(
-                        soap.get("assessment")
-                    )
-                )
-
-                report.plan = (
-                    ConsultationService
-                    ._stringify_soap_value(
-                        soap.get("plan")
-                    )
-                )
-
-                report.medications = meds
-
-                report.key_entities = {
-                    "interactions": interactions
-                }
-
-                report.follow_up_needed = (
-                    soap.get(
-                        "follow_up_needed",
-                        False
-                    )
-                )
-
-                report.follow_up_days = (
-                    soap.get(
-                        "follow_up_days"
-                    )
-                )
-
-                if not existing_report:
-                    db.add(report)
-
-                print("REPORT ADDED")
-
-                consultation.status = "completed"
-
-                print("SOAP REPORT SAVED")
-
-            else:
-
-                consultation.status = (
-                    "failed_transcription"
-                )
-
-        except Exception as e:
-
-            print(
-                f"END CONSULTATION ERROR: {str(e)}"
-            )
-
-            # IMPORTANT
-            db.rollback()
-
-            consultation = db.query(
-                Consultation
-            ).filter(
-                Consultation.consultation_id ==
-                consultation_id
+            print("DELETE SERVICE CALLED")
+
+            consultation = db.query(Consultation).filter(
+                Consultation.consultation_id == consultation_id,
+                Consultation.organization_id == organization_id
             ).first()
 
-            if consultation:
-                consultation.status = "failed"
+            print("CONSULTATION:", consultation)
 
-        # =========================
-        # SAFE FINAL COMMIT
-        # =========================
+            if not consultation:
+                return False
 
-        try:
+            # Delete related reports
+            reports = db.query(Report).filter(
+                Report.consultation_id == consultation_id
+            ).all()
+
+            for report in reports:
+                db.delete(report)
+
+            print("REPORTS DELETED")
+
+            # Delete consultation
+            db.delete(consultation)
+
+            print("BEFORE COMMIT")
 
             db.commit()
 
-            print("REPORT SAVED")
+            print("DELETE SUCCESS")
 
-            if consultation:
-                db.refresh(consultation)
+            return True
 
-        except Exception as commit_error:
+        except Exception as e:
 
             db.rollback()
 
-            print(
-                f"FINAL COMMIT ERROR: {commit_error}"
-            )
+            print("DELETE ERROR:", str(e))
 
-        # =========================
-        # CLEANUP LOCAL FILE
-        # =========================
-
-        try:
-
-            if os.path.exists(audio_file_path):
-
-                os.remove(audio_file_path)
-
-                print(
-                    f"[Cleanup] Removed local file: {audio_file_path}"
-                )
-
-        except Exception as cleanup_err:
-
-            print(
-                f"[Cleanup] Could not remove local file: {cleanup_err}"
-            )
-
-        return consultation
+            return False

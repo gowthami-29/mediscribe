@@ -23,6 +23,7 @@ from app.services.consultation_service import ConsultationService
 from app.services.export_service import ExportService
 import json
 import uuid
+print("CONSULTATION ROUTER LOADED")
 
 router = APIRouter()
 
@@ -396,9 +397,25 @@ def delete_consultation(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["admin", "practitioner"]))
 ):
+
+    print("DELETE ROUTE HIT")
+    print("CONSULTATION ID:", consultation_id)
+    print("CURRENT USER:", current_user)
+
     success = ConsultationService.delete_consultation(
-        db, consultation_id, current_user.organization_id
+        db,
+        consultation_id,
+        current_user.organization_id
     )
+
+    print("DELETE SUCCESS:", success)
+
     if not success:
-        raise HTTPException(status_code=404, detail="Consultation not found")
-    return {"message": "Consultation deleted"}
+        raise HTTPException(
+            status_code=404,
+            detail="Consultation not found"
+        )
+
+    return {
+        "message": "Consultation deleted"
+    }
