@@ -95,7 +95,8 @@ class ReportService:
             return None
 
         # Call OpenAI (Support both Standard and Azure OpenAI)
-        if "openai.azure.com" in settings.ENDPOINT:
+        is_azure = settings.ENDPOINT and ("azure.com" in settings.ENDPOINT or "cognitiveservices" in settings.ENDPOINT)
+        if is_azure:
             client = openai.AzureOpenAI(
                 api_key=settings.OPENAI_API_KEY,
                 api_version="2025-01-01-preview",
@@ -113,8 +114,8 @@ class ReportService:
         user_prompt = f"Transcription: {consultation.transcription_text}"
         
         # Determine model name from endpoint or default
-        model_name = "gpt-4"
-        if "deployments/" in settings.ENDPOINT:
+        model_name = "gpt-5.4" if is_azure else "gpt-4o"
+        if settings.ENDPOINT and "deployments/" in settings.ENDPOINT:
             model_name = settings.ENDPOINT.split("deployments/")[1].split("/")[0]
 
         response = client.chat.completions.create(

@@ -1,19 +1,32 @@
-from openai import AzureOpenAI
+import openai
 import base64
 import os
 import json
 
-client = AzureOpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    api_version="2025-01-01-preview",
-    azure_endpoint=os.getenv("ENDPOINT")
-)
+endpoint = os.getenv("ENDPOINT", "")
+api_key = os.getenv("OPENAI_API_KEY")
+
+if endpoint and ("azure.com" in endpoint or "cognitiveservices" in endpoint):
+    client = openai.AzureOpenAI(
+        api_key=api_key,
+        api_version="2025-01-01-preview",
+        azure_endpoint=endpoint.split("/openai/")[0]
+    )
+    # Determine chat model from deployment path or default to gpt-5.4
+    chat_model = "gpt-5.4"
+    if "deployments/" in endpoint:
+        chat_model = endpoint.split("deployments/")[1].split("/")[0]
+    embedding_model = "text-embedding-3-small"
+else:
+    client = openai.OpenAI(api_key=api_key)
+    chat_model = "gpt-4o"
+    embedding_model = "text-embedding-3-small"
 
 
 async def generate_embedding(text: str):
 
     response = client.embeddings.create(
-        model="text-embedding-3-small",
+        model=embedding_model,
         input=text
     )
 
@@ -28,7 +41,7 @@ async def analyze_xray_image(
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
     response = client.chat.completions.create(
-        model="gpt-5.4",
+        model=chat_model,
         messages=[
             {
                 "role": "system",
@@ -44,10 +57,12 @@ async def analyze_xray_image(
                 Return ONLY valid JSON in this format:
 
                 {{
-                    "findings": "",
-                    "impression": "",
+                    "indication": "Reason for examination / clinical context",
+                    "technique": "Modality and technique used (e.g. PA chest view)",
+                    "findings": "Detailed radiographic findings",
+                    "impression": "Concluding summary/impression",
                     "abnormalities": [],
-                    "comparison": ""
+                    "comparison": "Comparison with previous records"
                 }}
 
                 Do not return markdown.

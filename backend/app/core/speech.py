@@ -39,7 +39,7 @@ def upload_to_b2(file_path: str, object_key: str = None) -> str:
         object_key,
         ExtraArgs={"ContentType": "audio/webm"},
     )
-    print(f"[B2] Uploaded {file_path} → {object_key}")
+    print(f"[B2] Uploaded {file_path} -> {object_key}")
     return object_key
 
 
@@ -70,7 +70,7 @@ def _upload_to_assemblyai(file_path: str) -> str:
         )
     resp.raise_for_status()
     upload_url = resp.json()["upload_url"]
-    print(f"[AssemblyAI] File uploaded → {upload_url[:60]}...")
+    print(f"[AssemblyAI] File uploaded -> {upload_url[:60]}...")
     return upload_url
 
 
@@ -102,7 +102,7 @@ def _submit_transcript(upload_url: str) -> str:
     
     resp.raise_for_status()
     transcript_id = resp.json()["id"]
-    print(f"[AssemblyAI] Job submitted → {transcript_id}")
+    print(f"[AssemblyAI] Job submitted -> {transcript_id}")
     return transcript_id
 
 

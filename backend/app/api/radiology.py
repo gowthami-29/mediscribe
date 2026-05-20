@@ -8,6 +8,7 @@ from app.services.radiology_service import (
 )
 
 from app.models.radiology import RadiologyReport
+from app.models.patient import Patient
 from app.db.session import SessionLocal
 
 router = APIRouter()
@@ -54,6 +55,8 @@ async def analyze_xray(
     # Save report
     db_report = RadiologyReport(
         patient_id=patient_id,
+        indication=report.get("indication", ""),
+        technique=report.get("technique", ""),
         findings=report["findings"],
         impression=report["impression"],
         abnormalities=", ".join(report["abnormalities"]),
@@ -95,17 +98,26 @@ async def get_similar_reports(query: str):
         .all()
     )
 
+    matches = []
+    for report in results:
+        patient = db.query(Patient).filter(Patient.patient_id == str(report.patient_id)).first()
+        patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unknown Patient"
+        created_at_str = report.created_at.strftime("%Y-%m-%d %H:%M:%S") if report.created_at else "Unknown Date"
+        
+        matches.append({
+            "patient_id": str(report.patient_id),
+            "patient_name": patient_name,
+            "created_at": created_at_str,
+            "indication": report.indication,
+            "technique": report.technique,
+            "findings": report.findings,
+            "impression": report.impression,
+            "comparison": report.comparison
+        })
+
     db.close()
 
     return {
         "query": query,
-        "matches": [
-            {
-                "patient_id": str(report.patient_id),
-                "findings": report.findings,
-                "impression": report.impression,
-                "comparison": report.comparison
-            }
-            for report in results
-        ]
+        "matches": matches
     }

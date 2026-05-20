@@ -13,7 +13,7 @@ class RagService:
             raise ValueError("OPENAI_API_KEY not configured")
 
         # 1. Initialize Client
-        if settings.ENDPOINT and "openai.azure.com" in settings.ENDPOINT:
+        if settings.ENDPOINT and ("azure.com" in settings.ENDPOINT or "cognitiveservices" in settings.ENDPOINT):
             client = openai.AzureOpenAI(
                 api_key=settings.OPENAI_API_KEY,
                 api_version="2024-02-01", # Common Azure API version for embeddings

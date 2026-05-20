@@ -23,12 +23,45 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://[::1]:5173",
+        "https://localhost:5173",
+        "https://127.0.0.1:5173",
+        "https://[::1]:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://[::1]:5174",
+        "https://localhost:5174",
+        "https://127.0.0.1:5174",
+        "https://[::1]:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://[::1]:3000",
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
+        "https://[::1]:3000",
         "https://mediscribe-kohl.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi import Request
+import traceback
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"--> [REQUEST] {request.method} {request.url}")
+    logger.info(f"--> [HEADERS] {dict(request.headers)}")
+    try:
+        response = await call_next(request)
+        logger.info(f"<-- [RESPONSE] {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"[ERROR] Request failed: {e}")
+        logger.error(traceback.format_exc())
+        raise e
 
 # models
 from app.models.user import User
@@ -50,6 +83,7 @@ from app.api.analytics import router as analytics_router
 from app.api.audit import router as audit_router
 from app.api.speech import router as speech_router
 from app.api.radiology import router as radiology_router
+from app.api.dictation import router as dictation_router
 
 # Create all database tables (Note: In production with migrations, this might be handled by Alembic)
 @app.on_event("startup")
@@ -63,6 +97,7 @@ api_v1.include_router(auth_router, prefix="/auth", tags=["Auth"])
 api_v1.include_router(patient_router, prefix="/patients", tags=["Patients"])
 api_v1.include_router(consultation_router, prefix="/consultations", tags=["Consultations"])
 api_v1.include_router(speech_router, prefix="/speech", tags=["Speech"])
+api_v1.include_router(dictation_router, prefix="/dictation", tags=["Dictation"])
 api_v1.include_router(report_router, prefix="/reports", tags=["Reports"])
 api_v1.include_router(analysis_router, prefix="/ai-analysis", tags=["AI Analysis"])
 api_v1.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
