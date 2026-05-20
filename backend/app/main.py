@@ -89,6 +89,19 @@ from app.api.dictation import router as dictation_router
 @app.on_event("startup")
 def on_startup():
     logger.info("Starting MediScribe API...")
+    
+    # Enable pgvector extension for non-sqlite databases before table creation
+    if not settings.DATABASE_URL.startswith("sqlite"):
+        from sqlalchemy import text
+        try:
+            logger.info("Enabling pgvector extension if not exists...")
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                conn.commit()
+            logger.info("pgvector extension check/enable completed.")
+        except Exception as ext_err:
+            logger.warning(f"Could not check/enable pgvector extension dynamically: {ext_err}. Proceeding...")
+
     Base.metadata.create_all(bind=engine)
 
 api_v1 = APIRouter(prefix="/api/v1")
