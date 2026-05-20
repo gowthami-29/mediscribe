@@ -23,6 +23,22 @@ SOAP_FALLBACK = {
     "follow_up_days": None,
 }
 
+DICTATION_FALLBACK = {
+    "patient_name": "",
+    "patient_age": "",
+    "patient_gender": "",
+    "date": "",
+    "doctor_name": "",
+    "indication": "",
+    "history": "",
+    "findings": "",
+    "impression": "",
+    "plan": "",
+    "medications": [],
+    "follow_up": "",
+    "notes": "",
+}
+
 
 def _json_error(message: str, transcript: str = "") -> str:
     payload = {
@@ -35,7 +51,7 @@ def _json_error(message: str, transcript: str = "") -> str:
 
 
 def _headers() -> dict[str, str]:
-    if ENDPOINT and "openai.azure.com" in ENDPOINT:
+    if ENDPOINT and ("azure.com" in ENDPOINT or "cognitiveservices" in ENDPOINT):
         return {
             "api-key": OPENAI_API_KEY or "",
             "Content-Type": "application/json",
@@ -122,12 +138,13 @@ def _post_chat(body: dict[str, Any], timeout: int = 90):
             continue
         seen.add(marker)
 
-        # Ensure we use the correct endpoint for Azure if provided
         target_endpoint = ENDPOINT
-        if "openai.azure.com" in target_endpoint and "/openai/deployments/" not in target_endpoint:
-             # If user provided base URL but not deployment path
-             # This is a fallback, but the user seems to have the full path
-             pass
+        if target_endpoint and ("azure.com" in target_endpoint or "cognitiveservices" in target_endpoint):
+            if "/openai/deployments/" not in target_endpoint:
+                deployment_id = "gpt-5.4"
+                api_version = "2025-01-01-preview"
+                base_url = target_endpoint.rstrip("/")
+                target_endpoint = f"{base_url}/openai/deployments/{deployment_id}/chat/completions?api-version={api_version}"
 
         response = requests.post(
             target_endpoint,
@@ -343,6 +360,79 @@ def generate_soap_from_image(image_path: str, context: str = "", population_cont
     except Exception as e:
         print("IMAGE SOAP ERROR:", str(e))
         return _json_error(f"Image SOAP generation exception: {str(e)}")
+
+
+def generate_dictation_report(transcript: str, patient_context: str = "") -> dict:
+    """
+    Phase 1 — Doctor Dictation → Structured Report
+    Takes a doctor's spoken transcript and generates a structured medical report
+    suitable for letterhead printing.
+    Returns a dict (not JSON string) for direct use in PDF generation.
+    """
+    transcript = (transcript or "").strip()
+    if not transcript:
+        return {**DICTATION_FALLBACK, "_error": "Transcript is empty"}
+
+    if not OPENAI_API_KEY or not ENDPOINT:
+        return {**DICTATION_FALLBACK, "findings": transcript}
+
+    system_message = (
+        "You are a professional medical report writer. "
+        "A doctor has dictated the following notes verbally. "
+        "Extract and structure the information into a formal medical report. "
+        "Return ONLY valid JSON with EXACTLY these keys:\n"
+        "- patient_name: Patient's full name (or 'Not specified')\n"
+        "- patient_age: Patient's age (or '')\n"
+        "- patient_gender: Patient's gender (or '')\n"
+        "- date: Date of consultation (today if not mentioned)\n"
+        "- doctor_name: Doctor's name if mentioned (or '')\n"
+        "- indication: Why the patient is being seen (chief complaint)\n"
+        "- history: Relevant medical history, symptoms, duration\n"
+        "- findings: Clinical examination findings, vitals, test results\n"
+        "- impression: Doctor's diagnosis or differential diagnosis\n"
+        "- plan: Treatment plan, investigations ordered\n"
+        "- medications: Array of strings — each medication with dosage\n"
+        "- follow_up: Follow-up instructions (e.g. 'Review in 2 weeks')\n"
+        "- notes: Any additional notes or instructions\n\n"
+        "IMPORTANT: Write in formal medical language. Do not invent information not in the transcript."
+    )
+
+    user_message = f"Doctor's dictation:\n{transcript}"
+    if patient_context:
+        user_message += f"\n\n[Patient History from Records]\n{patient_context}"
+
+    body = {
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message},
+        ],
+        "temperature": 0.2,
+        "max_tokens": 1000,
+        "response_format": {"type": "json_object"},
+    }
+
+    try:
+        response = _post_chat(body)
+        print("DICTATION STATUS:", response.status_code)
+
+        if response.status_code != 200:
+            print("DICTATION RESPONSE:", response.text)
+            return {**DICTATION_FALLBACK, "findings": transcript, "_error": f"AI request failed: {response.status_code}"}
+
+        data = response.json()
+        content = data["choices"][0]["message"]["content"]
+        parsed = _extract_json(content)
+
+        # Normalize the result
+        result = {**DICTATION_FALLBACK, **parsed}
+        if not isinstance(result.get("medications"), list):
+            result["medications"] = []
+
+        return result
+
+    except Exception as e:
+        print("DICTATION AI ERROR:", str(e))
+        return {**DICTATION_FALLBACK, "findings": transcript, "_error": str(e)}
 
 
 def compare_medical_reports(existing_soap: dict, new_analysis: dict):

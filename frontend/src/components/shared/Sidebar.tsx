@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import {
   LayoutDashboard, Users, Stethoscope, BrainCircuit,
-  FileText, BarChart3, ShieldCheck, Settings, LogOut
+  FileText, BarChart3, ShieldCheck, Settings, LogOut, Mic
 } from 'lucide-react'
 import Logo from './Logo'
 
@@ -23,6 +23,7 @@ const NAV_GROUPS = [
     label: 'Clinical',
     items: [
       { to: '/app/ai-analysis', icon: BrainCircuit, label: 'AI Analysis', color: '#7c3aed', tag: 'New' },
+      { to: '/app/dictation',   icon: Mic,          label: 'Voice Dictation', color: '#0d9488', tag: 'Live' },
       { to: '/app/reports',     icon: FileText,     label: 'Reports',     color: '#0d9488' },
     ],
   },
