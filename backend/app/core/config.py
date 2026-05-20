@@ -1,3 +1,10 @@
+import sys
+try:
+    sys.stdout.reconfigure(write_through=True, line_buffering=True)
+    sys.stderr.reconfigure(write_through=True, line_buffering=True)
+except Exception:
+    pass
+
 from pydantic_settings import BaseSettings
 from typing import Optional, List
 import os
@@ -45,6 +52,14 @@ class Settings(BaseSettings):
     # File Uploads
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
+    
+    def __init__(self, **values):
+        super().__init__(**values)
+        if self.DATABASE_URL:
+            if self.DATABASE_URL.startswith("postgres://"):
+                self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+            elif self.DATABASE_URL.startswith("postgresql://") and not self.DATABASE_URL.startswith("postgresql+psycopg2://"):
+                self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
     
     class Config:
         env_file = ".env"

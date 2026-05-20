@@ -1,3 +1,10 @@
+import sys
+try:
+    sys.stdout.reconfigure(write_through=True, line_buffering=True)
+    sys.stderr.reconfigure(write_through=True, line_buffering=True)
+except Exception:
+    pass
+
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -95,9 +102,8 @@ def on_startup():
         from sqlalchemy import text
         try:
             logger.info("Enabling pgvector extension if not exists...")
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-                conn.commit()
             logger.info("pgvector extension check/enable completed.")
         except Exception as ext_err:
             logger.warning(f"Could not check/enable pgvector extension dynamically: {ext_err}. Proceeding...")
