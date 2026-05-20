@@ -17,6 +17,10 @@ class RadiologyReport(Base):
 
     impression = Column(Text)
 
+    indication = Column(Text)
+
+    technique = Column(Text)
+
     abnormalities = Column(Text)
 
     comparison = Column(Text)

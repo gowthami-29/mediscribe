@@ -16,6 +16,7 @@ import AnalyticsPage from '@/pages/AnalyticsPage'
 import AuditPage from '@/pages/AuditPage'
 import SettingsPage from '@/pages/SettingsPage'
 import VerifyEmailPage from '@/pages/VerifyEmailPage'
+import DictationPage from '@/pages/DictationPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="consultations" element={<ConsultationsPage />} />
         <Route path="consultations/:id/soap" element={<SoapEditorPage />} />
         <Route path="ai-analysis" element={<AIAnalysisPage />} />
+        <Route path="dictation" element={<DictationPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="audit" element={<AuditPage />} />
@@ -61,6 +63,7 @@ export default function App() {
       <Route path="/patients" element={<Navigate to="/app/patients" replace />} />
       <Route path="/consultations" element={<Navigate to="/app/consultations" replace />} />
       <Route path="/ai-analysis" element={<Navigate to="/app/ai-analysis" replace />} />
+      <Route path="/dictation" element={<Navigate to="/app/dictation" replace />} />
       <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
       <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
       <Route path="/audit" element={<Navigate to="/app/audit" replace />} />
