@@ -13,7 +13,7 @@ client = AzureOpenAI(
 async def generate_embedding(text: str):
 
     response = client.embeddings.create(
-        model="embedding-model",
+        model="text-embedding-3-small",
         input=text
     )
 
