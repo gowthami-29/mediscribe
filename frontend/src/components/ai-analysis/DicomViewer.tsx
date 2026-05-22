@@ -5,7 +5,7 @@ import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import cornerstoneMath from 'cornerstone-math';
 import dicomParser from 'dicom-parser';
 import Hammer from 'hammerjs';
-import { ZoomIn, ZoomOut, Move, Ruler, Sun, Info } from 'lucide-react';
+import { ZoomIn, Move, Ruler, Sun, Info } from 'lucide-react';
 import { clsx } from 'clsx';
 
 // Configure external dependencies for Cornerstone

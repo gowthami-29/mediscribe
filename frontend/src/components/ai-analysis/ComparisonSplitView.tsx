@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { DicomViewer } from './DicomViewer';
 import { Clock, CheckCircle2, AlertTriangle, Activity } from 'lucide-react';
 import axios from 'axios';
-import { clsx } from 'clsx';
 
 interface ComparisonSplitViewProps {
   patientId: string;
