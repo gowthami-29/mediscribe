@@ -28,7 +28,7 @@ async def analyze_xray(
     metadata = {}
 
     # Handle DICOM files
-    if file.filename.endswith(".dcm"):
+    if file.filename.lower().endswith(".dcm"):
 
         dicom_data = await file.read()
 
