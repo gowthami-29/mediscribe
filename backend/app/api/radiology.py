@@ -28,7 +28,7 @@ async def analyze_xray(
     metadata = {}
 
     # Handle DICOM files
-    if file.filename.endswith(".dcm"):
+    if file.filename.lower().endswith(".dcm"):
 
         dicom_data = await file.read()
 
@@ -81,27 +81,23 @@ async def analyze_xray(
 
     # Save radiology report
     db_report = RadiologyReport(
-
         patient_id=patient_id,
+        image_url=image_url,
+        modality=metadata.get("modality", ""),
+        body_part=metadata.get("body_part", ""),
+        study_date=metadata.get("study_date", ""),
         indication=report.get("indication", ""),
         technique=report.get("technique", ""),
         findings=report["findings"],
-
         impression=report["impression"],
-
         abnormalities=", ".join(report["abnormalities"]),
-
         comparison=report.get("comparison", ""),
-
         embedding=embedding
     )
 
     db.add(db_report)
-
     db.commit()
-
     db.refresh(db_report)
-
     db.close()
 
     return {
@@ -140,7 +136,6 @@ async def get_similar_reports(query: str):
     matches = []
 
     for report in results:
-
         patient = (
             db.query(Patient)
             .filter(
@@ -184,6 +179,8 @@ async def get_similar_reports(query: str):
         "query": query,
         "matches": matches
     }
+
+
 @router.get("/patient-radiology-history/{patient_id}")
 async def get_patient_radiology_history(
     patient_id: UUID
@@ -208,21 +205,13 @@ async def get_patient_radiology_history(
 
         history.append({
             "report_id": str(report.id),
-
             "image_url": report.image_url,
-
             "modality": report.modality,
-
             "body_part": report.body_part,
-
             "study_date": report.study_date,
-
             "findings": report.findings,
-
             "impression": report.impression,
-
             "comparison": report.comparison,
-
             "created_at": (
                 report.created_at.strftime(
                     "%Y-%m-%d %H:%M:%S"

@@ -5,17 +5,20 @@ import { radiologyApi, RadiologyResponse, SimilarReport } from '@/api/radiology'
 import { 
   UploadCloud, FileImage, Loader2, 
   AlertTriangle, History, Search, BookOpen, User, 
-  Sparkles, RefreshCw
+  Sparkles, RefreshCw, Layers, ShieldAlert, CheckCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { DicomViewer } from './DicomViewer'
+import { ComparisonSplitView } from './ComparisonSplitView'
 
 export default function RadiologyPanel() {
   const [patientId, setPatientId] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [statusText, setStatusText] = useState('')
   const [report, setReport] = useState<RadiologyResponse['report'] | null>(null)
+  const [showComparisonView, setShowComparisonView] = useState(false)
+  const [isApproved, setIsApproved] = useState(false)
   
   // pgvector search states
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,18 +37,15 @@ export default function RadiologyPanel() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file (PNG, JPG, JPEG)')
+      // Allow DICOM files as well as images
+      if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.dcm')) {
+        toast.error('Please upload an image or DICOM (.dcm) file')
         return
       }
       setSelectedFile(file)
-      
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
       setReport(null) // reset previous report
+      setShowComparisonView(false)
+      setIsApproved(false)
     }
   }
 
@@ -61,11 +61,12 @@ export default function RadiologyPanel() {
     }
 
     setLoading(true)
-    setStatusText('Uploading X-ray image to secure storage...')
+    setStatusText('Uploading radiology scan to secure storage...')
     setReport(null)
+    setShowComparisonView(false)
+    setIsApproved(false)
 
     try {
-      // Step-by-step loading simulation for excellent UX
       setTimeout(() => setStatusText('Analyzing image utilizing Azure OpenAI Vision...'), 1500)
       setTimeout(() => setStatusText('Cross-referencing findings with patient history...'), 3500)
       setTimeout(() => setStatusText('Generating structured radiology JSON report...'), 5500)
@@ -116,6 +117,30 @@ export default function RadiologyPanel() {
     handleSearchSimilar(term)
   }
 
+  const handleApproveReport = () => {
+    // In a full implementation, this would trigger a PUT request to update the report status
+    setIsApproved(true)
+    toast.success('Report reviewed, finalized, and pushed to patient record!')
+  }
+
+  if (showComparisonView && patientId && selectedFile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-1)' }}>Historical Comparison View</h2>
+          <button 
+            onClick={() => setShowComparisonView(false)}
+            className="btn btn-primary"
+            style={{ padding: '6px 14px', fontSize: 13 }}
+          >
+            Back to Report
+          </button>
+        </div>
+        <ComparisonSplitView patientId={patientId} currentFile={selectedFile} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Upper Section: Input + Visual Preview */}
@@ -129,7 +154,7 @@ export default function RadiologyPanel() {
           <div className="card-premium" style={{ padding: 22, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-1)' }}>
               <User size={18} color="var(--violet)" />
-              1. Link Patient & Upload X-ray
+              1. Link Patient & Upload Scan
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -153,7 +178,7 @@ export default function RadiologyPanel() {
 
               {/* Drag and Drop Container */}
               <div className="form-group">
-                <label className="form-label">Upload Scanned Image / Chest X-ray</label>
+                <label className="form-label">Upload Scanned Image or DICOM</label>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
@@ -161,12 +186,12 @@ export default function RadiologyPanel() {
                     e.preventDefault()
                     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                       const file = e.dataTransfer.files[0]
-                      if (file.type.startsWith('image/')) {
+                      if (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.dcm')) {
                         setSelectedFile(file)
-                        const reader = new FileReader()
-                        reader.onloadend = () => setImagePreview(reader.result as string)
-                        reader.readAsDataURL(file)
                         setReport(null)
+                        setShowComparisonView(false)
+                      } else {
+                        toast.error('Please upload an image or DICOM (.dcm) file')
                       }
                     }
                   }}
@@ -184,15 +209,15 @@ export default function RadiologyPanel() {
                   <input 
                     type="file"
                     ref={fileInputRef}
-                    accept="image/*"
+                    accept="image/*,.dcm"
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                   />
                   <UploadCloud size={32} color="var(--violet)" style={{ margin: '0 auto 10px', opacity: 0.8 }} />
                   <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: 'var(--text-1)' }}>
-                    {selectedFile ? selectedFile.name : 'Choose or drop radiology image'}
+                    {selectedFile ? selectedFile.name : 'Choose or drop radiology scan'}
                   </p>
-                  <p style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>Supports DICOM-export, PNG, JPG, JPEG.</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>Supports native DICOM (.dcm), PNG, JPG, JPEG.</p>
                 </div>
               </div>
 
@@ -251,46 +276,15 @@ export default function RadiologyPanel() {
             </div>
             <div>
               <h3 style={{ fontSize: 15, margin: 0, fontWeight: 700 }}>
-                X-ray Preview & Analysis
+                Radiology Preview & Analysis
               </h3>
-              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>Interactive Vision sheet</p>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>Interactive Cornerstone Viewport</p>
             </div>
           </div>
 
           <div style={{ padding: 22, flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {imagePreview ? (
-              <div style={{
-                borderRadius: 12,
-                overflow: 'hidden',
-                border: '1px solid var(--border)',
-                background: '#000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                maxHeight: 280,
-                position: 'relative'
-              }}>
-                <img 
-                  src={imagePreview} 
-                  alt="Scanned Radiology" 
-                  style={{ maxHeight: 280, width: 'auto', maxWidth: '100%', objectFit: 'contain' }} 
-                />
-                <div style={{
-                  position: 'absolute',
-                  top: 10,
-                  right: 10,
-                  background: 'rgba(0, 0, 0, 0.75)',
-                  backdropFilter: 'blur(4px)',
-                  color: '#fff',
-                  fontSize: 10,
-                  padding: '3px 8px',
-                  borderRadius: 20,
-                  fontWeight: 600,
-                  letterSpacing: '0.05em'
-                }}>
-                  DICOM PREVIEW
-                </div>
-              </div>
+            {selectedFile ? (
+              <DicomViewer file={selectedFile} />
             ) : (
               <div style={{
                 flex: 1,
@@ -306,13 +300,25 @@ export default function RadiologyPanel() {
                 minHeight: 220,
               }}>
                 <FileImage size={36} style={{ marginBottom: 10, opacity: 0.5 }} />
-                <span style={{ fontSize: 13 }}>Please upload an X-ray to preview</span>
+                <span style={{ fontSize: 13 }}>Please upload a scan to preview</span>
               </div>
             )}
 
             {/* AI Results Display */}
             {report && (
               <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                {/* Compliance Banner */}
+                <div style={{ background: 'var(--amber-light)', borderRadius: 10, padding: 14, border: '1px solid var(--amber-border)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <ShieldAlert size={20} color="var(--amber)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--amber-dark)', marginBottom: 4 }}>COMPLIANCE NOTICE: AI-ASSISTED PRE-READ</div>
+                    <div style={{ fontSize: 12, color: 'var(--amber-dark)', lineHeight: 1.5 }}>
+                      This report was generated by an AI model and is not an FDA-cleared standalone diagnostic tool. Mandatory doctor review, verification, and sign-off are required before this report is considered final.
+                    </div>
+                  </div>
+                </div>
+
                 {/* Indication & Technique */}
                 {(report.indication || report.technique) && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -387,14 +393,48 @@ export default function RadiologyPanel() {
                 {/* Comparisons */}
                 {report.comparison && (
                   <div style={{ background: 'rgba(59, 130, 246, 0.06)', borderRadius: 10, padding: 16, border: '1px solid rgba(59, 130, 246, 0.15)' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <History size={12} /> Comparison with Previous Reports
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <History size={12} /> Comparison with Previous Reports
+                      </div>
+                      <button 
+                        onClick={() => setShowComparisonView(true)}
+                        className="btn btn-sm"
+                        style={{ background: '#3b82f6', color: '#fff', fontSize: 11, padding: '4px 10px', borderRadius: 12, border: 'none' }}
+                      >
+                        <Layers size={12} style={{ marginRight: 4 }} /> Side-by-Side View
+                      </button>
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>
                       {report.comparison}
                     </p>
                   </div>
                 )}
+
+                {/* Approve & Push Button */}
+                <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+                  <button
+                    onClick={handleApproveReport}
+                    disabled={isApproved}
+                    className="btn btn-primary btn-lg"
+                    style={{
+                      width: '100%',
+                      justifyContent: 'center',
+                      background: isApproved ? 'var(--emerald)' : 'var(--grad-violet)',
+                      boxShadow: isApproved ? 'none' : 'var(--shadow-violet)',
+                      border: 'none',
+                      fontWeight: 600,
+                      opacity: isApproved ? 0.9 : 1,
+                      cursor: isApproved ? 'default' : 'pointer'
+                    }}
+                  >
+                    {isApproved ? (
+                      <><CheckCircle size={18} /> Finalized & Saved to Patient Record</>
+                    ) : (
+                      <><CheckCircle size={18} /> Approve & Push to Patient File</>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>
