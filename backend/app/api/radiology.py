@@ -195,3 +195,57 @@ async def get_similar_reports(query: str):
         "query": query,
         "matches": matches
     }
+@router.get("/patient-radiology-history/{patient_id}")
+async def get_patient_radiology_history(
+    patient_id: UUID
+):
+
+    db: Session = SessionLocal()
+
+    reports = (
+        db.query(RadiologyReport)
+        .filter(
+            RadiologyReport.patient_id == patient_id
+        )
+        .order_by(
+            RadiologyReport.created_at.desc()
+        )
+        .all()
+    )
+
+    history = []
+
+    for report in reports:
+
+        history.append({
+            "report_id": str(report.id),
+
+            "image_url": report.image_url,
+
+            "modality": report.modality,
+
+            "body_part": report.body_part,
+
+            "study_date": report.study_date,
+
+            "findings": report.findings,
+
+            "impression": report.impression,
+
+            "comparison": report.comparison,
+
+            "created_at": (
+                report.created_at.strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                if report.created_at
+                else ""
+            )
+        })
+
+    db.close()
+
+    return {
+        "patient_id": str(patient_id),
+        "history": history
+    }
