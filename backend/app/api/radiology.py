@@ -83,19 +83,8 @@ async def analyze_xray(
     db_report = RadiologyReport(
 
         patient_id=patient_id,
-
-        image_url=image_url,
-
-        modality=metadata.get("modality", ""),
-
-        body_part=metadata.get("body_part", ""),
-
-        study_date=metadata.get("study_date", ""),
-
         indication=report.get("indication", ""),
-
         technique=report.get("technique", ""),
-
         findings=report["findings"],
 
         impression=report["impression"],
