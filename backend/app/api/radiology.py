@@ -226,4 +226,4 @@ async def get_patient_radiology_history(
     return {
         "patient_id": str(patient_id),
         "history": history
-    }
+    }
