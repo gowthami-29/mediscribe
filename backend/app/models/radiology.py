@@ -9,9 +9,25 @@ import uuid
 class RadiologyReport(Base):
     __tablename__ = "radiology_reports"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4
+    )
 
     patient_id = Column(UUID(as_uuid=True))
+
+    modality = Column(Text)
+
+    body_part = Column(Text)
+    
+    image_url = Column(Text)
+
+    study_date = Column(Text)
+
+    indication = Column(Text)
+
+    technique = Column(Text)
 
     findings = Column(Text)
 
@@ -27,4 +43,7 @@ class RadiologyReport(Base):
 
     embedding = Column(Vector(1536))
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
