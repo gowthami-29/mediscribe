@@ -43,8 +43,17 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
   const [activeTool, setActiveTool] = useState<string>('Pan');
   const [showMetadata, setShowMetadata] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<boolean>(false);
+
+  const isDicom = (file?.name.toLowerCase().endsWith('.dcm')) || 
+                  (imageUrl && imageUrl.toLowerCase().endsWith('.dcm'));
 
   useEffect(() => {
+    if (!isDicom && imageUrl) {
+      setIsLoaded(true);
+      return;
+    }
+    
     if (!viewerRef.current) return;
 
     // Enable the element
@@ -63,10 +72,10 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
 
     // Add and activate tools safely (ignore if already added)
     try {
-      cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
-      cornerstoneTools.addTool(cornerstoneTools.PanTool);
-      cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
-      cornerstoneTools.addTool(cornerstoneTools.LengthTool);
+      cornerstoneTools.addTool(cornerstoneTools.WwwcTool, { name: 'Wwwc' });
+      cornerstoneTools.addTool(cornerstoneTools.PanTool, { name: 'Pan' });
+      cornerstoneTools.addTool(cornerstoneTools.ZoomTool, { name: 'Zoom' });
+      cornerstoneTools.addTool(cornerstoneTools.LengthTool, { name: 'Length' });
     } catch(e) {
       // Ignore if tools already added on a re-render
     }
@@ -91,6 +100,8 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
         }
       } catch (err) {
         console.error("Failed to load DICOM:", err);
+        setIsLoaded(true);
+        setLoadError(true);
       }
     };
 
@@ -115,79 +126,82 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
     setActiveTool(toolName);
   };
 
-  const isDicom = (file && file.name.toLowerCase().endsWith('.dcm')) || (imageUrl && imageUrl.toLowerCase().endsWith('.dcm'));
 
-  if (!isDicom) {
-    // Non-DICOM fallback simple image view
-    return (
-      <div className="w-full h-[600px] bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden border border-slate-800">
-        {file ? (
-          <img src={URL.createObjectURL(file)} className="max-w-full max-h-full object-contain" alt="Uploaded scan" />
-        ) : imageUrl ? (
-          <img src={imageUrl} className="max-w-full max-h-full object-contain" alt="Remote scan" />
-        ) : (
-          <div className="text-slate-500">No image loaded</div>
-        )}
-      </div>
-    );
-  }
 
   return (
-    <div className="relative w-full h-[600px] bg-black rounded-lg border border-slate-800 overflow-hidden flex flex-col">
+    <div className="relative w-full h-full flex flex-col bg-black overflow-hidden group">
+      
+      {/* Standard Image Rendering */}
+      {!isDicom && (imageUrl || file) && (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          {file ? (
+            <img src={URL.createObjectURL(file)} alt="Radiology Scan" className="max-w-full max-h-full object-contain" />
+          ) : (
+            <img src={imageUrl} alt="Radiology Scan" className="max-w-full max-h-full object-contain" />
+          )}
+        </div>
+      )}
+
+      {/* DICOM Viewer rendering */}
+      {(isDicom || file) && (
+        <div 
+          ref={viewerRef}
+          className="flex-1 w-full relative"
+          style={{ height: '100%' }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* Loading Overlay */}
+          {!isLoaded && !loadError && (
+            <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+              <span className="animate-pulse">Loading DICOM File...</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top HUD */}
-      <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-start z-10 pointer-events-none">
-        <div className="flex gap-2 pointer-events-auto">
+      {isDicom && (
+        <div className="absolute top-0 left-0 right-0 p-3 flex justify-between items-start z-10 pointer-events-none">
+          <div className="flex gap-2 pointer-events-auto">
+            <button 
+              onClick={() => handleToolActivate('Wwwc')}
+              className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Wwwc' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
+              title="Window/Level"
+            >
+              <Sun className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => handleToolActivate('Pan')}
+              className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Pan' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
+              title="Pan"
+            >
+              <Move className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => handleToolActivate('Zoom')}
+              className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Zoom' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
+              title="Zoom"
+            >
+              <ZoomIn className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => handleToolActivate('Length')}
+              className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Length' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
+              title="Measure Ruler"
+            >
+              <Ruler className="w-5 h-5" />
+            </button>
+          </div>
+
           <button 
-            onClick={() => handleToolActivate('Wwwc')}
-            className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Wwwc' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
-            title="Window/Level"
+            onClick={() => setShowMetadata(!showMetadata)}
+            className={clsx("p-2 rounded-md shadow-lg transition-colors pointer-events-auto", showMetadata ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
+            title="DICOM Metadata"
           >
-            <Sun className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => handleToolActivate('Pan')}
-            className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Pan' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
-            title="Pan"
-          >
-            <Move className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => handleToolActivate('Zoom')}
-            className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Zoom' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
-            title="Zoom"
-          >
-            <ZoomIn className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => handleToolActivate('Length')}
-            className={clsx("p-2 rounded-md shadow-lg transition-colors", activeTool === 'Length' ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
-            title="Measure Ruler"
-          >
-            <Ruler className="w-5 h-5" />
+            <Info className="w-5 h-5" />
           </button>
         </div>
-
-        <button 
-          onClick={() => setShowMetadata(!showMetadata)}
-          className={clsx("p-2 rounded-md shadow-lg transition-colors pointer-events-auto", showMetadata ? 'bg-indigo-600 text-white' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')}
-          title="DICOM Metadata"
-        >
-          <Info className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Viewport */}
-      <div 
-        ref={viewerRef}
-        className="flex-1 w-full h-full cursor-crosshair"
-        onContextMenu={(e) => e.preventDefault()}
-      >
-        {!isLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-            <span className="animate-pulse">Loading DICOM File...</span>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Metadata Pane */}
       {showMetadata && metadata && (

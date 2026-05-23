@@ -8,25 +8,19 @@ import {
   Sparkles, RefreshCw, ShieldAlert, CheckCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useRadiologyStore } from '@/store/radiologyStore'
 
-interface RadiologyPanelProps {
-  selectedFile: File | null;
-  setSelectedFile: (file: File | null) => void;
-  patientId: string;
-  setPatientId: (id: string) => void;
-  setShowComparison: (show: boolean) => void;
-}
-
-export default function RadiologyPanel({ 
-  selectedFile, 
-  setSelectedFile, 
-  patientId, 
-  setPatientId,
-  setShowComparison
-}: RadiologyPanelProps) {
+export default function RadiologyPanel() {
+  const { 
+    selectedFile, setSelectedFile, 
+    patientId, setPatientId, 
+    setShowComparison 
+  } = useRadiologyStore()
+  
   const [loading, setLoading] = useState(false)
   const [statusText, setStatusText] = useState('')
   const [report, setReport] = useState<RadiologyResponse['report'] | null>(null)
+  const [reportId, setReportId] = useState<string | null>(null)
   const [isApproved, setIsApproved] = useState(false)
   
   // pgvector search states
@@ -53,6 +47,7 @@ export default function RadiologyPanel({
       }
       setSelectedFile(file)
       setReport(null) // reset previous report
+      setReportId(null)
       setShowComparison(false)
       setIsApproved(false)
     }
@@ -72,6 +67,7 @@ export default function RadiologyPanel({
     setLoading(true)
     setStatusText('Uploading radiology scan to secure storage...')
     setReport(null)
+    setReportId(null)
     setShowComparison(false)
     setIsApproved(false)
 
@@ -84,6 +80,7 @@ export default function RadiologyPanel({
       
       if (response.success && response.report) {
         setReport(response.report)
+        setReportId(response.report_id)
         toast.success('Radiology Vision analysis complete!')
       } else {
         toast.error('Failed to analyze radiology image')
@@ -126,14 +123,34 @@ export default function RadiologyPanel({
     handleSearchSimilar(term)
   }
 
-  const handleApproveReport = () => {
-    // In a full implementation, this would trigger a PUT request to update the report status
-    setIsApproved(true)
-    toast.success('Report reviewed, finalized, and pushed to patient record!')
+  const handleApproveReport = async () => {
+    if (!reportId || !report) return
+    try {
+      await radiologyApi.updateReport(reportId, { ...report, status: 'FINAL' })
+      setIsApproved(true)
+      toast.success('Report reviewed, finalized, and pushed to patient record!')
+    } catch (err) {
+      toast.error('Failed to finalize report')
+    }
+  }
+
+  const handleDeleteReport = async () => {
+    if (!reportId) return
+    if (!window.confirm('Are you sure you want to delete this report?')) return
+    try {
+      await radiologyApi.deleteReport(reportId)
+      setReport(null)
+      setReportId(null)
+      setIsApproved(false)
+      setSelectedFile(null)
+      toast.success('Report deleted')
+    } catch (err) {
+      toast.error('Failed to delete report')
+    }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', padding: '24px 20px', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '24px 20px', gap: 24, flexShrink: 0 }}>
       {/* 1. Link Patient & Upload Scan */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-1)' }}>
@@ -263,18 +280,38 @@ export default function RadiologyPanel({
           </div>
 
           {/* Indication & Technique */}
-          {(report.indication || report.technique) && (
+          {(report.indication !== undefined || report.technique !== undefined) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {report.indication && (
+              {report.indication !== undefined && (
                 <div style={{ background: 'var(--surface-hover)', borderRadius: 10, padding: 14, border: '1px solid var(--border)' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4 }}>Clinical Indication</div>
-                  <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.indication}</p>
+                  {isApproved ? (
+                    <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.indication}</p>
+                  ) : (
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={report.indication} 
+                      onChange={e => setReport({ ...report, indication: e.target.value })} 
+                      style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
+                    />
+                  )}
                 </div>
               )}
-              {report.technique && (
+              {report.technique !== undefined && (
                 <div style={{ background: 'var(--surface-hover)', borderRadius: 10, padding: 14, border: '1px solid var(--border)' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4 }}>Technique</div>
-                  <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.technique}</p>
+                  {isApproved ? (
+                    <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.technique}</p>
+                  ) : (
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      value={report.technique} 
+                      onChange={e => setReport({ ...report, technique: e.target.value })} 
+                      style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -285,7 +322,17 @@ export default function RadiologyPanel({
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', textTransform: 'uppercase', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
               Findings
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.findings}</p>
+            {isApproved ? (
+              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.findings}</p>
+            ) : (
+              <textarea 
+                className="form-control" 
+                value={report.findings} 
+                rows={5}
+                onChange={e => setReport({ ...report, findings: e.target.value })} 
+                style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+              />
+            )}
           </div>
 
           {/* Impression */}
@@ -293,7 +340,17 @@ export default function RadiologyPanel({
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', textTransform: 'uppercase', marginBottom: 4 }}>
               Impression
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.impression}</p>
+            {isApproved ? (
+              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{report.impression}</p>
+            ) : (
+              <textarea 
+                className="form-control" 
+                value={report.impression} 
+                rows={3}
+                onChange={e => setReport({ ...report, impression: e.target.value })} 
+                style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+              />
+            )}
           </div>
 
           {/* Abnormalities */}
@@ -323,21 +380,45 @@ export default function RadiologyPanel({
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <History size={12} /> Comparison with Previous Reports
                 </div>
+                <button 
+                  onClick={() => setShowComparison(true)}
+                  className="btn btn-sm"
+                  style={{ background: '#3b82f6', color: '#fff', fontSize: 11, padding: '6px 12px', borderRadius: 8, border: 'none', alignSelf: 'flex-start' }}
+                >
+                  <History size={14} style={{ marginRight: 6 }} /> Open Side-by-Side View
+                </button>
               </div>
-              <p style={{ fontSize: 12.5, color: 'var(--text-1)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>
-                {report.comparison}
-              </p>
+              {isApproved ? (
+                <p style={{ fontSize: 12.5, color: 'var(--text-1)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>
+                  {report.comparison}
+                </p>
+              ) : (
+                <textarea 
+                  className="form-control" 
+                  value={report.comparison} 
+                  rows={2}
+                  onChange={e => setReport({ ...report, comparison: e.target.value })} 
+                  style={{ background: 'transparent', padding: '8px 10px', fontSize: 12.5 }}
+                />
+              )}
             </div>
           )}
 
-          {/* Approve & Push Button */}
-          <div style={{ marginTop: 4 }}>
+          {/* Approve & Push / Delete Buttons */}
+          <div style={{ marginTop: 4, display: 'flex', gap: 12 }}>
+            <button
+              onClick={handleDeleteReport}
+              className="btn btn-outline"
+              style={{ flex: 1, borderColor: 'var(--rose)', color: 'var(--rose)', height: 'auto', padding: '12px' }}
+            >
+              Delete Draft
+            </button>
             <button
               onClick={handleApproveReport}
               disabled={isApproved}
               className="btn btn-primary"
               style={{
-                width: '100%',
+                flex: 2,
                 justifyContent: 'center',
                 background: isApproved ? 'var(--emerald)' : 'var(--grad-violet)',
                 boxShadow: isApproved ? 'none' : 'var(--shadow-violet)',
@@ -350,9 +431,9 @@ export default function RadiologyPanel({
               }}
             >
               {isApproved ? (
-                <><CheckCircle size={16} /> Saved to Patient Record</>
+                <><CheckCircle size={16} /> Saved</>
               ) : (
-                <><CheckCircle size={16} /> Approve & Push</>
+                <><CheckCircle size={16} /> Finalize</>
               )}
             </button>
           </div>

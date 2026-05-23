@@ -4,9 +4,11 @@ import {
   RefreshCw, Trash2, ArrowRight, User, AlertCircle,
   Volume2
 } from 'lucide-react'
-import { dictationApi, DictationReport } from '@/api/dictation'
+import { dictationApi } from '@/api/dictation'
 import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
+import { useDictationStore } from '@/store/dictationStore'
+import SplitPane from '@/components/shared/SplitPane'
 
 // Extended window type for webkitSpeechRecognition
 declare global {
@@ -17,15 +19,19 @@ declare global {
 }
 
 export default function DictationPage() {
-  const [patientId, setPatientId] = useState<string>('')
-  const [letterhead, setLetterhead] = useState<File | null>(null)
+  const {
+    patientId, setPatientId,
+    letterhead, setLetterhead,
+    transcript, setTranscript,
+    realtimeText, setRealtimeText,
+    statusText, setStatusText,
+    report, setReport,
+    clearDictation
+  } = useDictationStore()
+
   const [letterheadPreview, setLetterheadPreview] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
-  const [transcript, setTranscript] = useState('')
-  const [realtimeText, setRealtimeText] = useState('')
-  const [statusText, setStatusText] = useState('Ready to dict')
   const [isProcessing, setIsProcessing] = useState(false)
-  const [report, setReport] = useState<DictationReport | null>(null)
   const [pdfGenerating, setPdfGenerating] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -56,10 +62,8 @@ export default function DictationPage() {
 
   // Clear current dictation
   const handleClear = () => {
-    setTranscript('')
-    setRealtimeText('')
+    clearDictation()
     setErrorMsg('')
-    setStatusText('Ready')
   }
 
   // Initialize Speech Recognition for Real-time Display
@@ -85,7 +89,8 @@ export default function DictationPage() {
 
         setRealtimeText(interimTranscript)
         if (finalTranscript) {
-          setTranscript(prev => prev + finalTranscript)
+          const currentTranscript = useDictationStore.getState().transcript;
+          setTranscript(currentTranscript + finalTranscript)
         }
       }
 
@@ -234,14 +239,15 @@ export default function DictationPage() {
         </div>
       </div>
 
-      {/* ── Main Grid ───────────────────── */}
-      <div className="grid-responsive" style={{
-        display: 'grid',
-        gridTemplateColumns: report ? '1fr 1.1fr' : '1.1fr 0.9fr',
-        gap: 24,
-      }}>
-        {/* Left Column: Dictation Controls */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* ── Main Grid (using SplitPane) ───────────────────── */}
+      <div style={{ height: 'calc(100vh - 180px)', display: 'flex', gap: 24 }}>
+        <SplitPane
+          id="dictationLayout"
+          defaultSplit={50}
+          minSplit={30}
+          maxSplit={70}
+          leftPane={
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingRight: 12, height: '100%', overflowY: 'auto' }}>
           
           {/* Patient Context & Letterhead Setup */}
           <div className="card" style={{ padding: 22 }}>
@@ -465,9 +471,9 @@ export default function DictationPage() {
             )}
           </div>
         </div>
-
-        {/* Right Column: Branded Report Output */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
+          }
+          rightPane={
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)', height: '100%', marginLeft: 12 }}>
           <div style={{
             padding: '18px 22px 14px',
             borderBottom: '1px solid var(--border)',
@@ -710,7 +716,8 @@ export default function DictationPage() {
             )}
           </div>
         </div>
-
+          }
+        />
       </div>
     </div>
   )

@@ -46,13 +46,16 @@ async def analyze_xray_image(
             {
                 "role": "system",
                 "content": f"""
-                You are an AI radiology assistant.
+                You are a highly capable general radiology AI assistant.
+                You can analyze ANY medical image (e.g., MRI, CT scan, Ultrasound, X-ray) of ANY body part (e.g., head, brain, chest, abdomen, pelvis, extremities).
+                Identify the modality (e.g., CT, MRI) and the anatomical region (e.g., Head, Pelvis) strictly based on the provided image, and provide a clinical analysis.
+                Do not make assumptions about the body part or modality. Evaluate the image independently.
 
                 Previous radiology history:
 
                 {history_text}
 
-                Analyze the uploaded medical image (e.g., X-ray, MRI, CT scan, or Ultrasound).
+                Analyze the uploaded medical image.
 
                 Return ONLY valid JSON in this format:
 
