@@ -33,13 +33,11 @@ class RadiologyReport(Base):
 
     impression = Column(Text)
 
-    indication = Column(Text)
-
-    technique = Column(Text)
-
     abnormalities = Column(Text)
 
     comparison = Column(Text)
+
+    status = Column(Text, default="DRAFT")
 
     embedding = Column(Vector(1536))
 

@@ -1,10 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
-const BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+export const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
 
 export const apiClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 120000, // 2 min — transcription + SOAP can take up to 90s
 })
@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
         const refreshToken = useAuthStore.getState().refreshToken
         if (!refreshToken) throw new Error('No refresh token')
 
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken })
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, { refresh_token: refreshToken })
         useAuthStore.getState().setTokens(data.access_token, refreshToken!)
         original.headers.Authorization = `Bearer ${data.access_token}`
         return apiClient(original)

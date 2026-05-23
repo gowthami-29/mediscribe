@@ -64,14 +64,15 @@ export default function Sidebar() {
     <nav 
       className={`app-sidebar ${sidebarOpen ? 'open' : 'closed'}`}
       style={{
-        width: 'var(--sidebar-w, 252px)',
+        width: '100%',
+        height: '100%',
         background: 'var(--surface)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
         borderRight: '1px solid var(--border)',
         boxShadow: 'var(--shadow-sm)',
-        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease',
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: 50,
       }}
     >

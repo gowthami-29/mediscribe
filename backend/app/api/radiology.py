@@ -13,6 +13,8 @@ from app.services.dicom_service import dicom_to_png_bytes
 from app.models.radiology import RadiologyReport
 from app.models.patient import Patient
 from app.db.session import SessionLocal
+from fastapi.responses import Response
+from app.services.export_service import ExportService
 
 router = APIRouter()
 
@@ -37,14 +39,16 @@ async def analyze_xray(
         )
 
         print("DICOM Metadata:", metadata)
+        raw_storage_bytes = dicom_data
 
     else:
 
         image_bytes = await file.read()
+        raw_storage_bytes = image_bytes
 
     # Upload image to cloud storage
     image_url = upload_image(
-        image_bytes,
+        raw_storage_bytes,
         file.filename
     )
 
@@ -92,6 +96,7 @@ async def analyze_xray(
         impression=report["impression"],
         abnormalities=", ".join(report["abnormalities"]),
         comparison=report.get("comparison", ""),
+        status="DRAFT",
         embedding=embedding
     )
 
@@ -107,7 +112,7 @@ async def analyze_xray(
         "previous_reports_count": len(previous_reports),
         "image_url": image_url,
         "dicom_metadata": metadata,
-        "report": report
+        "report": {**report, "status": "DRAFT"}
     }
 
 
@@ -209,9 +214,12 @@ async def get_patient_radiology_history(
             "modality": report.modality,
             "body_part": report.body_part,
             "study_date": report.study_date,
+            "indication": report.indication,
+            "technique": report.technique,
             "findings": report.findings,
             "impression": report.impression,
             "comparison": report.comparison,
+            "status": report.status,
             "created_at": (
                 report.created_at.strftime(
                     "%Y-%m-%d %H:%M:%S"
@@ -227,3 +235,137 @@ async def get_patient_radiology_history(
         "patient_id": str(patient_id),
         "history": history
     }
+
+
+@router.get("/all-reports")
+async def get_all_reports():
+    db: Session = SessionLocal()
+
+    reports = (
+        db.query(RadiologyReport)
+        .order_by(RadiologyReport.created_at.desc())
+        .all()
+    )
+
+    history = []
+    for report in reports:
+        patient = db.query(Patient).filter(Patient.patient_id == str(report.patient_id)).first()
+        patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unknown Patient"
+
+        history.append({
+            "report_id": str(report.id),
+            "patient_id": str(report.patient_id),
+            "patient_name": patient_name,
+            "image_url": report.image_url,
+            "modality": report.modality,
+            "body_part": report.body_part,
+            "study_date": report.study_date,
+            "indication": report.indication,
+            "technique": report.technique,
+            "findings": report.findings,
+            "impression": report.impression,
+            "comparison": report.comparison,
+            "status": report.status,
+            "created_at": (
+                report.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                if report.created_at
+                else ""
+            )
+        })
+
+    db.close()
+    return {"reports": history}
+
+
+@router.get("/export/{report_id}")
+async def export_radiology_report(report_id: UUID, format: str = "pdf"):
+    db: Session = SessionLocal()
+
+    report = (
+        db.query(RadiologyReport)
+        .filter(RadiologyReport.id == report_id)
+        .first()
+    )
+
+    if not report:
+        db.close()
+        return Response(status_code=404, content="Report not found")
+
+    patient = (
+        db.query(Patient)
+        .filter(Patient.patient_id == str(report.patient_id))
+        .first()
+    )
+
+    if not patient:
+        db.close()
+        return Response(status_code=404, content="Patient not found")
+
+    try:
+        pdf_bytes = ExportService.generate_radiology_pdf_bytes(report, patient)
+    except Exception as e:
+        db.close()
+        return Response(status_code=500, content=f"Failed to generate PDF: {str(e)}")
+    finally:
+        db.close()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="Radiology_Report_{str(report.id)[:8]}.pdf"'
+        }
+    )
+
+from pydantic import BaseModel
+
+class RadiologyReportUpdate(BaseModel):
+    indication: str = None
+    technique: str = None
+    findings: str = None
+    impression: str = None
+    comparison: str = None
+    status: str = None
+
+@router.put("/{report_id}")
+async def update_radiology_report(report_id: UUID, req: RadiologyReportUpdate):
+    db: Session = SessionLocal()
+    report = db.query(RadiologyReport).filter(RadiologyReport.id == report_id).first()
+    
+    if not report:
+        db.close()
+        return Response(status_code=404, content="Report not found")
+        
+    if req.indication is not None:
+        report.indication = req.indication
+    if req.technique is not None:
+        report.technique = req.technique
+    if req.findings is not None:
+        report.findings = req.findings
+    if req.impression is not None:
+        report.impression = req.impression
+    if req.comparison is not None:
+        report.comparison = req.comparison
+    if req.status is not None:
+        report.status = req.status
+        
+    db.commit()
+    db.refresh(report)
+    db.close()
+    
+    return {"success": True, "message": "Report updated successfully"}
+
+@router.delete("/{report_id}")
+async def delete_radiology_report(report_id: UUID):
+    db: Session = SessionLocal()
+    report = db.query(RadiologyReport).filter(RadiologyReport.id == report_id).first()
+    
+    if not report:
+        db.close()
+        return Response(status_code=404, content="Report not found")
+        
+    db.delete(report)
+    db.commit()
+    db.close()
+    
+    return {"success": True, "message": "Report deleted successfully"}

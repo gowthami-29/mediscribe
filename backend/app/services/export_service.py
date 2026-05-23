@@ -2,6 +2,7 @@ import io
 import json
 from datetime import datetime
 from app.models.report import Report
+from app.models.radiology import RadiologyReport
 from app.models.user import User
 from app.models.patient import Patient
 
@@ -415,6 +416,130 @@ class ExportService:
 
         buffer.seek(0)
 
+        return buffer.read()
+
+    @staticmethod
+    def generate_radiology_pdf_bytes(
+        report: RadiologyReport,
+        patient: Patient
+    ) -> bytes:
+
+        buffer = io.BytesIO()
+
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=2 * cm,
+            leftMargin=2 * cm,
+            topMargin=2 * cm,
+            bottomMargin=2 * cm,
+        )
+
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            "Title",
+            parent=styles["Heading1"],
+            fontSize=18,
+            textColor=colors.HexColor("#1a1a2e"),
+            spaceAfter=4,
+        )
+
+        heading_style = ParagraphStyle(
+            "SectionHead",
+            parent=styles["Heading2"],
+            fontSize=12,
+            textColor=colors.HexColor("#7c3aed"),
+            spaceBefore=12,
+            spaceAfter=4,
+        )
+
+        body_style = ParagraphStyle(
+            "Body",
+            parent=styles["Normal"],
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor("#374151"),
+        )
+
+        label_style = ParagraphStyle(
+            "Label",
+            parent=styles["Normal"],
+            fontSize=9,
+            textColor=colors.HexColor("#6b7280"),
+        )
+
+        # Use study_date if available, otherwise created_at
+        display_date = report.created_at or datetime.utcnow()
+        timestamp = display_date.strftime("%B %d, %Y at %H:%M UTC")
+
+        patient_name = _clean(
+            getattr(patient, "full_name", None)
+            or
+            f"{getattr(patient, 'first_name', '')} "
+            f"{getattr(patient, 'last_name', '')}".strip()
+        )
+
+        story = []
+
+        # Header
+        story.append(Paragraph("MediScribe", title_style))
+        story.append(Paragraph("Radiology AI Report", styles["Heading2"]))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e5e7eb")))
+        story.append(Spacer(1, 0.3 * cm))
+
+        # Meta table
+        meta_data = [
+            ["Report ID", str(report.id)[:8].upper() + "..."],
+            ["Date", report.study_date or timestamp],
+            ["Modality", getattr(report, 'modality', 'Unknown')],
+            ["Patient", patient_name],
+        ]
+        if getattr(report, 'body_part', None):
+            meta_data.insert(3, ["Body Part", report.body_part])
+
+        meta_table = Table(meta_data, colWidths=[4 * cm, 13 * cm])
+        meta_table.setStyle(
+            TableStyle([
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#6b7280")),
+                ("TEXTCOLOR", (1, 0), (1, -1), colors.HexColor("#111827")),
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ])
+        )
+        story.append(meta_table)
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb")))
+
+        # Sections
+        sections = [
+            ("Indication", getattr(report, 'indication', None)),
+            ("Technique", getattr(report, 'technique', None)),
+            ("Findings", getattr(report, 'findings', None)),
+            ("Impression", getattr(report, 'impression', None)),
+            ("Comparison", getattr(report, 'comparison', None))
+        ]
+
+        for title, content in sections:
+            if not content:
+                continue
+
+            story.append(Paragraph(title.upper(), heading_style))
+
+            text = _clean(content).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>")
+            story.append(Paragraph(text, body_style))
+            story.append(Spacer(1, 0.2 * cm))
+
+        # Footer
+        story.append(Spacer(1, 0.5 * cm))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb")))
+        story.append(Spacer(1, 0.2 * cm))
+        story.append(Paragraph(f"Digitally prepared by MediScribe AI Platform • {timestamp}", label_style))
+
+        doc.build(story)
+        buffer.seek(0)
         return buffer.read()
 
     @staticmethod

@@ -46,7 +46,7 @@ export const ComparisonSplitView: React.FC<ComparisonSplitViewProps> = ({
       </h3>
 
       {selectedHistoricalScan ? (
-        <div className="flex flex-col h-full gap-4">
+        <div className="flex flex-col flex-1 min-h-0 gap-4">
           {/* Split viewport for historical image */}
           <div className="bg-slate-900/50 rounded-xl border border-slate-800/60 shadow-xl overflow-hidden h-[300px] shrink-0">
             <DicomViewer 
@@ -60,7 +60,7 @@ export const ComparisonSplitView: React.FC<ComparisonSplitViewProps> = ({
           </div>
           
           {/* Comparison RAG Insights */}
-          <div className="flex-1 bg-slate-800/40 rounded-xl border border-slate-700 p-4 overflow-y-auto">
+          <div className="flex-1 bg-slate-800/40 rounded-xl border border-slate-700 p-4 overflow-y-auto" style={{ minHeight: 0 }}>
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-700">
               <h4 className="text-sm font-semibold text-slate-200">Historical Findings</h4>
               <button 
@@ -91,7 +91,7 @@ export const ComparisonSplitView: React.FC<ComparisonSplitViewProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex-1 bg-slate-800/20 rounded-xl border border-slate-800/60 p-4 overflow-y-auto flex flex-col">
+        <div className="flex-1 bg-slate-800/20 rounded-xl border border-slate-800/60 p-4 overflow-y-auto flex flex-col" style={{ minHeight: 0 }}>
           {loading ? (
             <div className="flex flex-1 items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>

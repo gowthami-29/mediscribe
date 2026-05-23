@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import ReportList from '@/components/reports/ReportList'
-import { FileText, Search,  } from 'lucide-react'
+import RadiologyReportList from '@/components/reports/RadiologyReportList'
+import { FileText, Search, Image } from 'lucide-react'
 
 export default function ReportsPage() {
   const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState<'soap' | 'radiology'>('soap')
 
   return (
     <div className="fade-in">
       {/* Page header */}
       <div className="page-header stack-on-mobile" style={{ marginBottom: 20 }}>
-        <h1 className="page-title">SOAP Reports</h1>
+        <h1 className="page-title">Reports</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Search */}
           <div style={{ position: 'relative', flex: 1 }}>
@@ -17,25 +19,73 @@ export default function ReportsPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search patients, reports…"
+              placeholder={`Search ${activeTab === 'soap' ? 'SOAP notes' : 'radiology reports'}...`}
               className="form-control"
               style={{ paddingLeft: 32, width: '100%', minWidth: 200 }}
             />
           </div>
           {/* SOAP Standard badge */}
-          <div className="desktop-only" style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            background: 'var(--teal-light)', border: '1px solid var(--teal-glow)',
-            borderRadius: 10, padding: '8px 14px', fontSize: 12, color: 'var(--teal-dark)', fontWeight: 700,
-            whiteSpace: 'nowrap', boxShadow: '0 2px 10px var(--teal-glow-op)'
-          }}>
-            <FileText size={14} />
-            SOAP Standard
-          </div>
+          {activeTab === 'soap' && (
+            <div className="desktop-only" style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              background: 'var(--teal-light)', border: '1px solid var(--teal-glow)',
+              borderRadius: 10, padding: '8px 14px', fontSize: 12, color: 'var(--teal-dark)', fontWeight: 700,
+              whiteSpace: 'nowrap', boxShadow: '0 2px 10px var(--teal-glow-op)'
+            }}>
+              <FileText size={14} />
+              SOAP Standard
+            </div>
+          )}
         </div>
       </div>
 
-      <ReportList search={search} />
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--border)' }}>
+        <button
+          onClick={() => setActiveTab('soap')}
+          style={{
+            padding: '10px 16px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'soap' ? '2px solid var(--teal)' : '2px solid transparent',
+            color: activeTab === 'soap' ? 'var(--teal)' : 'var(--text-3)',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.2s'
+          }}
+        >
+          <FileText size={16} /> Clinical SOAP Notes
+        </button>
+        <button
+          onClick={() => setActiveTab('radiology')}
+          style={{
+            padding: '10px 16px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'radiology' ? '2px solid var(--violet)' : '2px solid transparent',
+            color: activeTab === 'radiology' ? 'var(--violet)' : 'var(--text-3)',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.2s'
+          }}
+        >
+          <Image size={16} /> Radiology AI Reports
+        </button>
+      </div>
+
+      {activeTab === 'soap' ? (
+        <ReportList search={search} />
+      ) : (
+        <RadiologyReportList />
+      )}
     </div>
   )
 }
