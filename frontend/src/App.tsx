@@ -38,14 +38,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected app routes */}
-      <Route 
-        path="/app/radiology" 
-        element={
-          <ProtectedRoute>
-            <RadiologyViewerPage />
-          </ProtectedRoute>
-        } 
-      />
+
 
       <Route
         path="/app"
@@ -58,6 +51,7 @@ export default function App() {
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="patients" element={<PatientsPage />} />
+        <Route path="radiology" element={<RadiologyViewerPage />} />
         <Route path="consultations" element={<ConsultationsPage />} />
         <Route path="consultations/:id/soap" element={<SoapEditorPage />} />
         <Route path="ai-analysis" element={<AIAnalysisPage />} />

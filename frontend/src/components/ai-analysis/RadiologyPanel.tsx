@@ -323,13 +323,6 @@ export default function RadiologyPanel({
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <History size={12} /> Comparison with Previous Reports
                 </div>
-                <button 
-                  onClick={() => setShowComparison(true)}
-                  className="btn btn-sm"
-                  style={{ background: '#3b82f6', color: '#fff', fontSize: 11, padding: '6px 12px', borderRadius: 8, border: 'none', alignSelf: 'flex-start' }}
-                >
-                  <Layers size={14} style={{ marginRight: 6 }} /> Open Side-by-Side View
-                </button>
               </div>
               <p style={{ fontSize: 12.5, color: 'var(--text-1)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>
                 {report.comparison}
