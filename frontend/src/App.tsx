@@ -17,6 +17,7 @@ import AuditPage from '@/pages/AuditPage'
 import SettingsPage from '@/pages/SettingsPage'
 import VerifyEmailPage from '@/pages/VerifyEmailPage'
 import DictationPage from '@/pages/DictationPage'
+import RadiologyViewerPage from '@/pages/RadiologyViewerPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -37,6 +38,15 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected app routes */}
+      <Route 
+        path="/app/radiology" 
+        element={
+          <ProtectedRoute>
+            <RadiologyViewerPage />
+          </ProtectedRoute>
+        } 
+      />
+
       <Route
         path="/app"
         element={
