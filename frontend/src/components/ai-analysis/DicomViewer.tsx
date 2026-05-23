@@ -61,16 +61,15 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
 
     const element = viewerRef.current;
 
-    // Add and activate tools
-    const WwwcTool = cornerstoneTools.WwwcTool;
-    const PanTool = cornerstoneTools.PanTool;
-    const ZoomTool = cornerstoneTools.ZoomTool;
-    const LengthTool = cornerstoneTools.LengthTool;
-    
-    cornerstoneTools.addTool(WwwcTool);
-    cornerstoneTools.addTool(PanTool);
-    cornerstoneTools.addTool(ZoomTool);
-    cornerstoneTools.addTool(LengthTool);
+    // Add and activate tools safely (ignore if already added)
+    try {
+      cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
+      cornerstoneTools.addTool(cornerstoneTools.PanTool);
+      cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
+      cornerstoneTools.addTool(cornerstoneTools.LengthTool);
+    } catch(e) {
+      // Ignore if tools already added on a re-render
+    }
 
     cornerstoneTools.setToolActive('Pan', { mouseButtonMask: 1 }); // Left click
 
@@ -105,11 +104,11 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
   }, [file, imageUrl]);
 
   const handleToolActivate = (toolName: string) => {
-    // Deactivate current tools
-    cornerstoneTools.setToolActive('Pan', { mouseButtonMask: 0 });
-    cornerstoneTools.setToolActive('Wwwc', { mouseButtonMask: 0 });
-    cornerstoneTools.setToolActive('Zoom', { mouseButtonMask: 0 });
-    cornerstoneTools.setToolActive('Length', { mouseButtonMask: 0 });
+    // Correct way to deactivate tools in cornerstone
+    cornerstoneTools.setToolPassive('Pan');
+    cornerstoneTools.setToolPassive('Wwwc');
+    cornerstoneTools.setToolPassive('Zoom');
+    cornerstoneTools.setToolPassive('Length');
 
     // Activate selected tool
     cornerstoneTools.setToolActive(toolName, { mouseButtonMask: 1 });

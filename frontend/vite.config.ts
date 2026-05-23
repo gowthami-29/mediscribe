@@ -9,6 +9,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  esbuild: {
+    keepNames: true, // Fixes cornerstone-tools minification bugs in production
+  },
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
