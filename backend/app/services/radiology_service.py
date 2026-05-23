@@ -52,7 +52,7 @@ async def analyze_xray_image(
 
                 {history_text}
 
-                Analyze the uploaded X-ray.
+                Analyze the uploaded medical image (e.g., X-ray, MRI, CT scan, or Ultrasound).
 
                 Return ONLY valid JSON in this format:
 
@@ -75,7 +75,7 @@ async def analyze_xray_image(
                 "content": [
                     {
                         "type": "text",
-                        "text": "Analyze this X-ray image."
+                        "text": "Analyze this medical image (MRI, CT, X-ray, etc)."
                     },
                     {
                         "type": "image_url",
