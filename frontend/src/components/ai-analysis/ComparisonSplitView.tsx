@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DicomViewer } from './DicomViewer';
-import { Clock, CheckCircle2, AlertTriangle, Activity } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 
 interface ComparisonSplitViewProps {
@@ -11,10 +11,7 @@ interface ComparisonSplitViewProps {
 }
 
 export const ComparisonSplitView: React.FC<ComparisonSplitViewProps> = ({ 
-  patientId, 
-  currentFile, 
-  currentImageUrl, 
-  currentMetadata 
+  patientId
 }) => {
   const [history, setHistory] = useState<any[]>([]);
   const [selectedHistoricalScan, setSelectedHistoricalScan] = useState<any | null>(null);

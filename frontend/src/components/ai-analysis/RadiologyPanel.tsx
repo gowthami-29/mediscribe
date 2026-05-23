@@ -5,7 +5,7 @@ import { radiologyApi, RadiologyResponse, SimilarReport } from '@/api/radiology'
 import { 
   UploadCloud, Loader2, 
   AlertTriangle, History, Search, BookOpen, User, 
-  Sparkles, RefreshCw, ShieldAlert, CheckCircle, Layers
+  Sparkles, RefreshCw, ShieldAlert, CheckCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 

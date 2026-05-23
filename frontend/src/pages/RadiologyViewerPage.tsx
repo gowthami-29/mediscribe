@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, FileImage } from 'lucide-react'
+import { FileImage } from 'lucide-react'
 import { DicomViewer } from '@/components/ai-analysis/DicomViewer'
 import RadiologyPanel from '@/components/ai-analysis/RadiologyPanel'
 import { ComparisonSplitView } from '@/components/ai-analysis/ComparisonSplitView'
 
 export default function RadiologyViewerPage() {
-  const navigate = useNavigate()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [patientId, setPatientId] = useState<string>('')
   const [showComparison, setShowComparison] = useState(false)
