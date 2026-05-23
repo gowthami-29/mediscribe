@@ -14,7 +14,6 @@ interface RadiologyPanelProps {
   setSelectedFile: (file: File | null) => void;
   patientId: string;
   setPatientId: (id: string) => void;
-  showComparison: boolean;
   setShowComparison: (show: boolean) => void;
 }
 
@@ -23,7 +22,6 @@ export default function RadiologyPanel({
   setSelectedFile, 
   patientId, 
   setPatientId,
-  showComparison,
   setShowComparison
 }: RadiologyPanelProps) {
   const [loading, setLoading] = useState(false)

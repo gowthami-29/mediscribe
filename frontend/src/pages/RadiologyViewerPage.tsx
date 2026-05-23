@@ -82,7 +82,6 @@ export default function RadiologyViewerPage() {
            setSelectedFile={setSelectedFile}
            patientId={patientId}
            setPatientId={setPatientId}
-           showComparison={showComparison}
            setShowComparison={setShowComparison}
         />
       </div>
