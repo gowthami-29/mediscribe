@@ -63,13 +63,14 @@ export default function DashboardPage() {
   return (
     <div className="fade-in">
       {/* ── Welcome Banner ──────────────────────── */}
-      <div className="stack-on-mobile" style={{
+      <div style={{
         background: 'linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 50%, var(--teal-dark) 100%)',
-        borderRadius: 16, padding: '24px 28px', marginBottom: 24,
+        borderRadius: 16, padding: 'clamp(18px, 4vw, 28px)',
+        marginBottom: 24,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         boxShadow: 'var(--shadow-teal)',
         position: 'relative', overflow: 'hidden',
-        gap: 20
+        gap: 16, flexWrap: 'wrap',
       }}>
         {/* Background decoration */}
         <div style={{
@@ -117,7 +118,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stat Cards ──────────────────────────── */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div className="grid-responsive grid-cols-stats" style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
         {STAT_CARDS.map((s) => {
           const Icon = s.icon
           return (
@@ -158,7 +159,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Row 2: Recent Consultations + Quick Actions ── */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 24 }}>
+      <div className="grid-responsive grid-cols-main" style={{ display: 'grid', gap: 20, marginBottom: 24 }}>
         {/* Recent Consultations */}
         <div className="card" style={{ overflow: 'hidden' }}>
             <div className="stack-on-mobile" style={{
@@ -285,7 +286,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Row 3: Monthly Trend + KPIs ─────────── */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="grid-responsive grid-cols-2-equal" style={{ display: 'grid', gap: 20 }}>
         {/* Monthly Trend */}
         <div className="card">
           <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>

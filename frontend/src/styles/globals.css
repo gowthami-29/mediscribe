@@ -341,9 +341,10 @@
     letter-spacing: 0.07em;
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
+    white-space: nowrap;
   }
   .data-table td {
-    padding: 13px 16px;
+    padding: 12px 16px;
     font-size: 13px;
     color: var(--text-2);
     border-bottom: 1px solid var(--border);
@@ -369,12 +370,14 @@
     justify-content: space-between;
     margin-bottom: 24px;
     gap: 12px;
+    flex-wrap: wrap;
   }
   .page-title {
-    font-size: 24px;
+    font-size: clamp(20px, 4vw, 24px);
     font-family: 'DM Serif Display', serif;
     color: var(--text-1);
     margin: 0;
+    white-space: nowrap;
   }
   .page-subtitle {
     font-size: 13px;
@@ -529,20 +532,28 @@
 /* ── Responsive Design ─────────────────────────────────────── */
 @media (max-width: 1024px) {
   :root {
-    --sidebar-w: 240px;
+    --sidebar-w: 260px;
   }
 
   .app-sidebar {
     position: fixed !important;
+    width: var(--sidebar-w) !important;
+    max-width: 85vw !important;
     top: 0;
     left: 0;
     bottom: 0;
     height: 100vh;
     transform: translateX(-100%);
+    z-index: 50;
   }
 
   .app-sidebar.open {
     transform: translateX(0) !important;
+  }
+
+  /* Show mobile overlay when sidebar is open */
+  .mobile-overlay {
+    display: block !important;
   }
 
   .desktop-only {
@@ -568,6 +579,83 @@
   }
 }
 
+/* ── Responsive Grid Helpers ───────────────────────────────── */
+
+/* 4-column stats grid (dashboard, consultations) */
+.grid-cols-stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* 3-column grid (patients stats) */
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 2-column main layout (dashboard row 2) */
+.grid-cols-main {
+  grid-template-columns: 1.4fr 1fr;
+}
+
+/* 2-column equal (dashboard row 3) */
+.grid-cols-2-equal {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ── Dictation page side-by-side layout */
+.dictation-layout {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 1024px) {
+  .dictation-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .grid-cols-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid-cols-main {
+    grid-template-columns: 1fr;
+  }
+  .grid-cols-2-equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stack-on-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .grid-responsive {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-cols-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-cols-main,
+  .grid-cols-2-equal,
+  .dictation-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-cols-stats,
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -587,17 +675,6 @@
   gap: 16px;
 }
 
-@media (max-width: 768px) {
-  .stack-on-mobile {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-  
-  .grid-responsive {
-    grid-template-columns: 1fr !important;
-  }
-}
-
 @media (max-width: 640px) {
   main {
     padding: 12px 14px !important;
@@ -611,6 +688,68 @@
   .grid-cols-2, .grid-cols-3, .grid-cols-4 {
     grid-template-columns: 1fr !important;
   }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .stat-card-premium {
+    padding: 16px 18px;
+  }
+}
+
+/* ── Landing Page Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-nav-links,
+  .lp-nav-cta {
+    display: none !important;
+  }
+
+  .lp-hamburger {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lp-float-badge {
+    display: none !important;
+  }
+
+  .lp-how-arrow {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .lp-hamburger {
+    display: none !important;
+  }
+}
+
+/* ── Settings layout ────────────────────────────────────────── */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .settings-grid {
+    grid-template-columns: 240px 1fr;
+  }
+}
+
+/* ── Profile form grid ──────────────────────────────────────── */
+.profile-form-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .profile-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* ── Focus Ring ─────────────────────────────────────────────── */
@@ -618,4 +757,86 @@
   outline: 2px solid var(--teal);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ── AI Analysis split layout ───────────────────────────────── */
+.ai-analysis-split {
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+@media (max-width: 900px) {
+  .ai-analysis-split {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Consultation table — compact action buttons on mobile ──── */
+@media (max-width: 900px) {
+  .consultation-actions {
+    flex-wrap: wrap;
+    gap: 4px !important;
+  }
+  .consultation-actions button {
+    font-size: 11px !important;
+    padding: 5px 8px !important;
+  }
+}
+
+/* ── btn-icon utility ───────────────────────────────────────── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-icon:hover {
+  background: var(--surface-hover);
+}
+
+/* ── Patient form grid ──────────────────────────────────────── */
+.patient-form-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .patient-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .patient-form-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* ── col-span-full utility ──────────────────────────────────── */
+.col-span-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Organization settings grid ────────────────────────────── */
+.org-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .org-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── Medication row grid ────────────────────────────────────── */
+.med-row-grid {
+  grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
+}
+
+@media (max-width: 640px) {
+  .med-row-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
 }

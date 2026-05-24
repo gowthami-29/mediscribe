@@ -84,8 +84,7 @@ export default function PatientForm({ initial, onSuccess }: Props) {
   )
 
   const sectionTitle = (title: string) => (
-    <div style={{ 
-      gridColumn: '1 / -1', 
+    <div className="col-span-full" style={{ 
       paddingBottom: 8, 
       marginBottom: 8, 
       borderBottom: '1px solid var(--border)',
@@ -102,7 +101,7 @@ export default function PatientForm({ initial, onSuccess }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+      <div className="patient-form-grid" style={{ display: 'grid', gap: 16 }}>
         {sectionTitle('Demographics')}
         {field('First Name', 'first_name', 'text', true)}
         {field('Last Name', 'last_name', 'text', true)}
@@ -183,15 +182,15 @@ export default function PatientForm({ initial, onSuccess }: Props) {
         <div style={{ gridColumn: 'span 1' }}></div>
 
         {sectionTitle('Medical History')}
-        <div style={{ gridColumn: 'span 3' }}>
+        <div className="col-span-full">
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Medical History</label>
           <textarea {...register('medical_history')} className="form-control" rows={2} style={{ fontSize: 13 }} placeholder="Previous diagnoses, surgeries, etc." />
         </div>
-        <div style={{ gridColumn: 'span 3' }}>
+        <div className="col-span-full">
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Allergies</label>
           <textarea {...register('allergies')} className="form-control" rows={2} style={{ fontSize: 13 }} placeholder="List known allergies…" />
         </div>
-        <div style={{ gridColumn: 'span 3' }}>
+        <div className="col-span-full">
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Current Medications</label>
           <textarea {...register('current_medications')} className="form-control" rows={2} style={{ fontSize: 13 }} placeholder="List current medications and dosages…" />
         </div>

@@ -10,18 +10,18 @@ export default function ReportsPage() {
   return (
     <div className="fade-in">
       {/* Page header */}
-      <div className="page-header stack-on-mobile" style={{ marginBottom: 20 }}>
+      <div className="page-header" style={{ marginBottom: 20, flexWrap: 'wrap' }}>
         <h1 className="page-title">Reports</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
           {/* Search */}
-          <div style={{ position: 'relative', flex: 1 }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 160 }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={`Search ${activeTab === 'soap' ? 'SOAP notes' : 'radiology reports'}...`}
               className="form-control"
-              style={{ paddingLeft: 32, width: '100%', minWidth: 200 }}
+              style={{ paddingLeft: 32, width: '100%' }}
             />
           </div>
           {/* SOAP Standard badge */}
@@ -30,7 +30,7 @@ export default function ReportsPage() {
               display: 'flex', alignItems: 'center', gap: 7,
               background: 'var(--teal-light)', border: '1px solid var(--teal-glow)',
               borderRadius: 10, padding: '8px 14px', fontSize: 12, color: 'var(--teal-dark)', fontWeight: 700,
-              whiteSpace: 'nowrap', boxShadow: '0 2px 10px var(--teal-glow-op)'
+              whiteSpace: 'nowrap', boxShadow: '0 2px 10px var(--teal-glow-op)',
             }}>
               <FileText size={14} />
               SOAP Standard
@@ -40,7 +40,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <button
           onClick={() => setActiveTab('soap')}
           style={{
@@ -55,7 +55,9 @@ export default function ReportsPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
         >
           <FileText size={16} /> Clinical SOAP Notes
@@ -74,7 +76,9 @@ export default function ReportsPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
         >
           <Image size={16} /> Radiology AI Reports
