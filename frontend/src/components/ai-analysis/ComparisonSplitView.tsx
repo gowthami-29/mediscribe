@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
+
 import {
   Clock,
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react'
 
-import axios from 'axios'
+import { apiClient } from '@/api/client'
 
 interface ComparisonSplitViewProps {
   patientId: string
@@ -36,10 +37,20 @@ export const ComparisonSplitView: React.FC<
 
       try {
 
+        console.log(
+          "FETCHING HISTORY FOR:",
+          patientId
+        )
+
         setLoading(true)
 
-        const res = await axios.get(
-          `/api/v1/radiology/patient-radiology-history/${patientId}`
+        const res = await apiClient.get(
+          `/radiology/patient-radiology-history/${patientId}`
+        )
+
+        console.log(
+          "HISTORY RESPONSE:",
+          res.data
         )
 
         if (
