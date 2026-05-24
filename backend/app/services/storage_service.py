@@ -2,12 +2,14 @@ import boto3
 import uuid
 import os
 
+
 s3 = boto3.client(
     "s3",
     endpoint_url=os.getenv("B2_ENDPOINT"),
     aws_access_key_id=os.getenv("B2_KEY_ID"),
     aws_secret_access_key=os.getenv("B2_APPLICATION_KEY")
 )
+
 
 def upload_image(file_bytes, filename):
 
@@ -19,8 +21,9 @@ def upload_image(file_bytes, filename):
         Body=file_bytes
     )
 
+    # Public image URL
     return (
-        f"{os.getenv('B2_ENDPOINT')}/"
+        f"https://f005.backblazeb2.com/file/"
         f"{os.getenv('B2_BUCKET_NAME')}/"
         f"{unique_name}"
     )

@@ -34,30 +34,64 @@ export interface SimilarReportsResponse {
 }
 
 export const radiologyApi = {
+
   analyzeXray: (patientId: string, file: File) => {
+
     const formData = new FormData()
+
     formData.append('file', file)
-    return apiClient.post<RadiologyResponse>(`/radiology/analyze-xray`, formData, {
-      params: { patient_id: patientId },
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then((r) => r.data)
+
+    return apiClient.post<RadiologyResponse>(
+      `/radiology/analyze-xray`,
+      formData,
+      {
+        params: { patient_id: patientId },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    ).then((r) => r.data)
   },
 
   getSimilarReports: (query: string) => {
-    return apiClient.get<SimilarReportsResponse>(`/radiology/similar-reports`, {
-      params: { query },
-    }).then((r) => r.data)
+
+    return apiClient.get<SimilarReportsResponse>(
+      `/radiology/similar-reports`,
+      {
+        params: { query },
+      }
+    ).then((r) => r.data)
   },
 
   getAllReports: () => {
-    return apiClient.get<{ reports: any[] }>(`/radiology/all-reports`).then((r) => r.data)
+
+    return apiClient.get<{ reports: any[] }>(
+      `/radiology/all-reports`
+    ).then((r) => r.data)
   },
 
-  updateReport: (reportId: string, data: Partial<RadiologyResponse['report']>) => {
-    return apiClient.put(`/radiology/${reportId}`, data).then((r) => r.data)
+  getPatientRadiologyHistory: (patientId: string) => {
+
+    return apiClient.get(
+      `/radiology/patient-radiology-history/${patientId}`
+    ).then((r) => r.data)
+  },
+
+  updateReport: (
+    reportId: string,
+    data: Partial<RadiologyResponse['report']>
+  ) => {
+
+    return apiClient.put(
+      `/radiology/${reportId}`,
+      data
+    ).then((r) => r.data)
   },
 
   deleteReport: (reportId: string) => {
-    return apiClient.delete(`/radiology/${reportId}`).then((r) => r.data)
+
+    return apiClient.delete(
+      `/radiology/${reportId}`
+    ).then((r) => r.data)
   }
 }
