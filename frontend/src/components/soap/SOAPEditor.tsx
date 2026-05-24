@@ -272,7 +272,7 @@ export default function SOAPEditor({ consultationId }: Props) {
               <div style={{ fontSize: 12, color: 'var(--text-4)', fontStyle: 'italic', padding: '10px', border: '1px dashed var(--border)', borderRadius: 8, textAlign: 'center' }}>No medications prescribed</div>
             ) : (
               fields.medications.map((med, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 0.5fr', gap: 8, background: 'var(--surface-hover)', padding: 10, borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div key={i} style={{ display: 'grid', gap: 8, background: 'var(--surface-hover)', padding: 10, borderRadius: 8, border: '1px solid var(--border)' }} className="med-row-grid">
                   <input placeholder="Name" value={med.name} onChange={e => updateMedication(i, 'name', e.target.value)} disabled={reportStatus === 'approved'} className="form-control" style={{ marginBottom: 0, height: 32, fontSize: 12 }} />
                   <input placeholder="Dosage" value={med.dosage} onChange={e => updateMedication(i, 'dosage', e.target.value)} disabled={reportStatus === 'approved'} className="form-control" style={{ marginBottom: 0, height: 32, fontSize: 12 }} />
                   <input placeholder="Freq" value={med.frequency} onChange={e => updateMedication(i, 'frequency', e.target.value)} disabled={reportStatus === 'approved'} className="form-control" style={{ marginBottom: 0, height: 32, fontSize: 12 }} />
@@ -316,7 +316,7 @@ export default function SOAPEditor({ consultationId }: Props) {
       </div>
 
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20, flexWrap: 'wrap' }}>
         <button
           onClick={() => exportMut.mutate('pdf')}
           disabled={exportMut.isPending}

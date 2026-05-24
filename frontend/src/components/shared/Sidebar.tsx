@@ -102,6 +102,11 @@ export default function Sidebar() {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  onClick={() => {
+                    if (window.innerWidth <= 1024 && sidebarOpen) {
+                      useUIStore.getState().toggleSidebar()
+                    }
+                  }}
                   style={({ isActive }) => ({
                     display: 'flex',
                     alignItems: 'center',

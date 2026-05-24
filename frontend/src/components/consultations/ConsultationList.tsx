@@ -92,7 +92,7 @@ export default function ConsultationList() {
       </div>
 
       {/* ── Mini Stats ───────────────────────── */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div className="grid-responsive grid-cols-stats" style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
         {stats.map((s) => {
           const Icon = s.icon
           return (
@@ -224,7 +224,7 @@ export default function ConsultationList() {
                       </td>
 
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <div className="consultation-actions" style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
                           {/* Start/Resume Button for anything not completed */}
                           {(c.status === 'scheduled' || c.status === 'pending' || c.status === 'failed_transcription') && (
                             <button

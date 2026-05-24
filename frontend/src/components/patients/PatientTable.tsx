@@ -67,7 +67,7 @@ export default function PatientTable() {
       </div>
 
       {/* ── Stats ────────────────────────────── */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div className="grid-responsive grid-cols-3" style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
         {[
           { icon: Users,     label: 'Total Patients', value: patients.length,  color: '#3b82f6' },
           { icon: UserCheck, label: 'Active',          value: activeCount,      color: '#10b981' },

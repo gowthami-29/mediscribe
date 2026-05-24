@@ -517,7 +517,7 @@ export default function LandingPage() {
           {/* Top: brand + nav columns */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 36, marginBottom: 40 }}>
             {/* Brand */}
-            <div style={{ gridColumn: 'span 1' }}>
+            <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#0d9488,#14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Stethoscope size={15} color="#fff" />
@@ -547,8 +547,8 @@ export default function LandingPage() {
             <div>
               <h4 style={{ fontSize: 11, fontWeight: 700, color: '#f0f6fc', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Account</h4>
               {[
-                { label: 'Log In',    action: () => navigate('/login') },
-                { label: 'Sign Up',   action: () => navigate('/login') },
+                { label: 'Log In',  action: () => navigate('/login') },
+                { label: 'Sign Up', action: () => navigate('/login') },
               ].map(({ label, action }) => (
                 <div key={label} style={{ marginBottom: 9 }}>
                   <button onClick={action}
@@ -569,26 +569,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
-      {/* ══════════ RESPONSIVE STYLES ══════════ */}
-      <style>{`
-        /* Hide desktop nav on mobile */
-        @media (max-width: 768px) {
-          .lp-nav-links { display: none !important; }
-          .lp-nav-cta   { display: none !important; }
-          .lp-hamburger { display: flex !important; }
-          .lp-how-arrow { display: none !important; }
-          .lp-float-badge { display: none !important; }
-        }
-        /* Show desktop nav, hide hamburger on desktop */
-        @media (min-width: 769px) {
-          .lp-hamburger { display: none !important; }
-        }
-        /* Tighten hero mockup on small screens */
-        @media (max-width: 480px) {
-          .lp-float-badge { display: none !important; }
-        }
-      `}</style>
     </div>
   )
 }

@@ -14,7 +14,7 @@ export default function QuickActions() {
   return (
     <div style={{ marginBottom: 28 }}>
       <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-1)', marginBottom: 14 }}>Quick Actions</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div className="grid-cols-stats" style={{ display: 'grid', gap: 14 }}>
         {ACTIONS.map(({ label, description, icon: Icon, color, path }) => (
           <button
             key={label}

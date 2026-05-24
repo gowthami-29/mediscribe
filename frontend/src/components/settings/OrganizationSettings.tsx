@@ -21,7 +21,7 @@ const OrganizationSettings: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }} className="org-grid">
+      <div style={{ display: 'grid', gap: 16 }} className="org-grid">
         {details.map((item) => (
           <div
             key={item.label}
@@ -82,14 +82,6 @@ const OrganizationSettings: React.FC = () => {
           View Billing Details →
         </button>
       </div>
-
-      <style>{`
-        @media (min-width: 768px) {
-          .org-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };

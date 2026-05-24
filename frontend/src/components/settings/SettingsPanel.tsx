@@ -15,8 +15,8 @@ export default function SettingsPanel() {
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }} className="settings-grid">
-      {/* Sidebar Navigation */}
+    <div className="settings-grid">
+      {/* Tab Navigation — horizontal on mobile, vertical sidebar on desktop */}
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
@@ -47,6 +47,7 @@ export default function SettingsPanel() {
               background: tab === key ? 'var(--teal)' : 'transparent',
               color: tab === key ? '#fff' : 'var(--text-3)',
               boxShadow: tab === key ? 'var(--shadow-teal)' : 'none',
+              textAlign: 'left',
             }}
             onMouseEnter={(e) => {
               if (tab !== key) {
@@ -72,15 +73,15 @@ export default function SettingsPanel() {
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 16,
-        padding: 32,
+        padding: 'clamp(20px, 4vw, 32px)',
         boxShadow: 'var(--shadow-sm)',
-        minHeight: 500,
+        minHeight: 400,
       }}>
         {tab === 'profile' && <ProfileSettings />}
         {tab === 'security' && <SecuritySettings />}
         {tab === 'organization' && <OrganizationSettings />}
         {tab === 'notifications' && (
-          <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+          <div style={{ textAlign: 'center', padding: '60px 24px' }}>
             <div style={{
               background: 'var(--surface-2)',
               width: 64, height: 64,
@@ -99,14 +100,6 @@ export default function SettingsPanel() {
           </div>
         )}
       </div>
-
-      <style>{`
-        @media (min-width: 1024px) {
-          .settings-grid {
-            grid-template-columns: 260px 1fr !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -95,7 +95,7 @@ export default function ReportList({ search = '' }: Props) {
   return (
     <div>
       {/* Mini Stats */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div className="grid-responsive grid-cols-3" style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
         {[
           { label: 'Total Reports',    value: allReports.length, color: '#7c3aed', icon: FileText },
           { label: 'Approved / Signed',value: approvedCount,     color: '#059669', icon: CheckCircle2 },

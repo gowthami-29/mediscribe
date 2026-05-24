@@ -13,10 +13,13 @@ interface UIState {
   setPanelSize: (id: string, size: number) => void
 }
 
+const isMobile = () => typeof window !== 'undefined' && window.innerWidth <= 1024
+
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      sidebarOpen: true,
+      // Default open on desktop, closed on mobile
+      sidebarOpen: typeof window !== 'undefined' ? window.innerWidth > 1024 : true,
       currentPage: 'dashboard',
       theme: 'light',
       panelSizes: {},
@@ -27,6 +30,14 @@ export const useUIStore = create<UIState>()(
       setTheme: (theme) => set({ theme }),
       setPanelSize: (id, size) => set((s) => ({ panelSizes: { ...s.panelSizes, [id]: size } })),
     }),
-    { name: 'mediscribe-ui' }
+    {
+      name: 'mediscribe-ui',
+      // After rehydration from localStorage, force sidebar closed on mobile
+      onRehydrateStorage: () => (state) => {
+        if (state && isMobile()) {
+          state.sidebarOpen = false
+        }
+      },
+    }
   )
 )

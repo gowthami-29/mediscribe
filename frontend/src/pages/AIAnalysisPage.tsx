@@ -64,9 +64,8 @@ export default function AIAnalysisPage() {
         </div>
 
         {/* ── Main Content ───────────────────── */}
-        <div className="grid-responsive" style={{
+        <div className={`grid-responsive ${analysisId ? 'ai-analysis-split' : ''}`} style={{
           display: 'grid',
-          gridTemplateColumns: analysisId ? '1.1fr 0.9fr' : '1fr',
           gap: 24,
           transition: 'grid-template-columns 0.3s ease',
         }}>

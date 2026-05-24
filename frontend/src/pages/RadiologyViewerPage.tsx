@@ -88,15 +88,36 @@ export default function RadiologyViewerPage() {
   )
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 100px)', width: '100%', overflow: 'hidden', background: '#0f172a', borderRadius: 16, border: '1px solid var(--border)' }}>
-      <SplitPane 
-        id="radiologyMainSplit"
-        defaultSplit={70}
-        minSplit={40}
-        maxSplit={85}
-        leftPane={leftViewerContent}
-        rightPane={rightSidebarContent}
-      />
-    </div>
+    <>
+      {/* Desktop: SplitPane side-by-side */}
+      <div
+        className="desktop-only"
+        style={{ height: 'calc(100vh - 100px)', width: '100%', overflow: 'hidden', background: '#0f172a', borderRadius: 16, border: '1px solid var(--border)' }}
+      >
+        <SplitPane 
+          id="radiologyMainSplit"
+          defaultSplit={70}
+          minSplit={40}
+          maxSplit={85}
+          leftPane={leftViewerContent}
+          rightPane={rightSidebarContent}
+        />
+      </div>
+
+      {/* Mobile: stacked layout */}
+      <div
+        className="mobile-only"
+        style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}
+      >
+        {/* Viewer panel — fixed height on mobile */}
+        <div style={{ background: '#0f172a', borderRadius: 16, border: '1px solid var(--border)', height: 320, overflow: 'hidden', position: 'relative' }}>
+          {leftViewerContent}
+        </div>
+        {/* Controls panel — scrollable */}
+        <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <RadiologyPanel />
+        </div>
+      </div>
+    </>
   )
 }

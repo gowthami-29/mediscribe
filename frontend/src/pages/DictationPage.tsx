@@ -8,7 +8,6 @@ import { dictationApi } from '@/api/dictation'
 import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import { useDictationStore } from '@/store/dictationStore'
-import SplitPane from '@/components/shared/SplitPane'
 
 // Extended window type for webkitSpeechRecognition
 declare global {
@@ -234,20 +233,15 @@ export default function DictationPage() {
       {/* ── Header ─────────────────────────── */}
       <div className="page-header">
         <div>
-          <h1 className="page-title" style={{ fontSize: 28, color: 'var(--teal)' }}>Voice Dictation & Letterhead Reports</h1>
+          <h1 className="page-title" style={{ fontSize: 'clamp(20px, 5vw, 28px)', color: 'var(--teal)' }}>Voice Dictation & Letterhead Reports</h1>
           <p className="page-subtitle">Speak out your clinical dictation, generate beautifully formatted medical reports, and print with your custom clinic letterhead instantly.</p>
         </div>
       </div>
 
-      {/* ── Main Grid (using SplitPane) ───────────────────── */}
-      <div style={{ height: 'calc(100vh - 180px)', display: 'flex', gap: 24 }}>
-        <SplitPane
-          id="dictationLayout"
-          defaultSplit={50}
-          minSplit={30}
-          maxSplit={70}
-          leftPane={
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingRight: 12, height: '100%', overflowY: 'auto' }}>
+      {/* ── Main Grid (responsive: side-by-side on desktop, stacked on mobile) ── */}
+      <div className="dictation-layout" style={{ display: 'grid', gap: 24 }}>
+        {/* ── LEFT: Input Panel ─────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           
           {/* Patient Context & Letterhead Setup */}
           <div className="card" style={{ padding: 22 }}>
@@ -471,9 +465,9 @@ export default function DictationPage() {
             )}
           </div>
         </div>
-          }
-          rightPane={
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)', height: '100%', marginLeft: 12 }}>
+
+        {/* ── RIGHT: Report Preview ─────────────────────── */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
           <div style={{
             padding: '18px 22px 14px',
             borderBottom: '1px solid var(--border)',
@@ -552,7 +546,7 @@ export default function DictationPage() {
                       CLINICAL CONSULTATION SHEET
                     </h2>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: 12, color: '#374151' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 16px', fontSize: 12, color: '#374151' }}>
                       <div><strong>Patient:</strong> {report.patient_name}</div>
                       <div><strong>Date:</strong> {report.date || new Date().toLocaleDateString()}</div>
                       <div><strong>Age / Gender:</strong> {report.patient_age || '—'} / {report.patient_gender || '—'}</div>
@@ -716,8 +710,6 @@ export default function DictationPage() {
             )}
           </div>
         </div>
-          }
-        />
       </div>
     </div>
   )

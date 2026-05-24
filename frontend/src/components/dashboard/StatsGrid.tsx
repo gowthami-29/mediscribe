@@ -16,7 +16,7 @@ export default function StatsGrid() {
   })
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 28 }}>
+    <div className="grid-cols-stats" style={{ display: 'grid', gap: 20, marginBottom: 28 }}>
       {STAT_CONFIGS.map(({ key, label, icon: Icon, color, suffix }) => (
         <div key={key} style={{
           background: 'var(--surface)',

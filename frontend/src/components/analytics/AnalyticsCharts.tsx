@@ -27,7 +27,7 @@ export default function AnalyticsCharts() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* ── Summary Stat Cards ─────────────── */}
       {sum && (
-        <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div className="grid-responsive grid-cols-3" style={{ display: 'grid', gap: 16 }}>
           {[
             { label: 'Avg Duration',    value: `${sum.avg_duration_minutes ?? 0} min`, icon: Timer,     color: '#3b82f6', bg: '#eff6ff' },
             { label: 'Reports Exported',value: sum.reports_exported ?? 0,              icon: BarChart2,  color: '#7c3aed', bg: '#f5f3ff' },
@@ -55,7 +55,7 @@ export default function AnalyticsCharts() {
       )}
 
       {/* ── Charts Row ─────────────────────── */}
-      <div className="grid-responsive" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="grid-responsive grid-cols-2-equal" style={{ display: 'grid', gap: 20 }}>
         {/* Consultations by Type */}
         <div className="card">
           <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>

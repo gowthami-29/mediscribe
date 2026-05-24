@@ -99,7 +99,7 @@ const ProfileSettings: React.FC = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }} className="profile-form-grid">
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }} className="profile-form-grid">
         {/* Full Name */}
         <div>
           <label style={labelStyle}>Full Name</label>
@@ -282,14 +282,6 @@ const ProfileSettings: React.FC = () => {
           </button>
         </div>
       </form>
-
-      <style>{`
-        @media (min-width: 768px) {
-          .profile-form-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };
