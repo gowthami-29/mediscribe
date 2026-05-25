@@ -11,6 +11,7 @@ interface Props {
 
 export default function PatientForm({ initial, onSuccess }: Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<CreatePatientPayload>({
+    mode: 'onChange',
     defaultValues: initial ? {
       first_name: initial.first_name,
       last_name: initial.last_name,
@@ -153,7 +154,8 @@ export default function PatientForm({ initial, onSuccess }: Props) {
         type={type}
         {...register(name, { 
           required: required ? `${label} is required` : false,
-          ...(type === 'number' ? { min: { value: 0.01, message: 'Invalid' } } : {})
+          ...(type === 'number' ? { min: { value: 0.01, message: 'Invalid' } } : {}),
+          ...(type === 'tel' ? { pattern: { value: /^\d{10}$/, message: 'Must be 10 digits' } } : {})
         })}
         className="form-control"
         style={{ marginBottom: 0, height: 38, fontSize: 13 }}
@@ -257,7 +259,7 @@ export default function PatientForm({ initial, onSuccess }: Props) {
 
         {sectionTitle('Emergency Contact')}
         {field('Contact Name', 'emergency_contact_name')}
-        {field('Contact Phone', 'emergency_contact_phone')}
+        {field('Contact Phone', 'emergency_contact_phone', 'tel')}
         <div style={{ gridColumn: 'span 1' }}></div>
 
         {sectionTitle('Medical History')}

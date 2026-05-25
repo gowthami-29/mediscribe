@@ -7,7 +7,9 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.core.deps import get_current_user
 from app.services.export_service import ExportService
+from app.services.dictation_service import DictationService
 import io
+import json
 
 router = APIRouter()
 
@@ -83,20 +85,59 @@ def export_report(
         )
 
     else:
+        ke = report.key_entities
+        if ke and isinstance(ke, str):
+            try:
+                ke = json.loads(ke)
+            except Exception:
+                pass
+        
+        is_dictation = isinstance(ke, dict) and ke.get("source") == "voice_dictation"
+        
+        if is_dictation:
+            # Reconstruct the dictation dict
+            import os
+            report_dict = ke.get("original_dictation", {})
+            if not report_dict:
+                subj = json.loads(report.subjective) if report.subjective and isinstance(report.subjective, str) else report.subjective or {}
+                obj = json.loads(report.objective) if report.objective and isinstance(report.objective, str) else report.objective or {}
+                asses = json.loads(report.assessment) if report.assessment and isinstance(report.assessment, str) else report.assessment or {}
+                plan = json.loads(report.plan) if report.plan and isinstance(report.plan, str) else report.plan or {}
+                report_dict = {
+                    "indication": subj.get("indication", ""),
+                    "history": subj.get("history", ""),
+                    "findings": obj.get("findings", ""),
+                    "impression": asses.get("impression", ""),
+                    "plan": plan.get("plan", ""),
+                    "follow_up": plan.get("follow_up", ""),
+                    "notes": plan.get("notes", ""),
+                    "medications": report.medications or [],
+                    "patient_name": ke.get("patient_name", patient.full_name),
+                    "doctor_name": getattr(doctor, "full_name", ""),
+                    "date": str(report.created_at.date()) if report.created_at else ""
+                }
+            
+            letterhead_bytes = None
+            letterhead_ext = "png"
+            lh_path = ke.get("letterhead_path")
+            if lh_path and os.path.exists(lh_path):
+                with open(lh_path, "rb") as f:
+                    letterhead_bytes = f.read()
+                letterhead_ext = lh_path.rsplit(".", 1)[-1].lower() if "." in lh_path else "png"
 
-        file_bytes = (
-            ExportService.generate_pdf_bytes(
-                report,
-                doctor,
-                patient
+            file_bytes = DictationService.generate_pdf(
+                report_dict,
+                letterhead_bytes=letterhead_bytes,
+                letterhead_ext=letterhead_ext
             )
-        )
+            filename = f"Dictation_Report_{safe_id}.pdf"
+        else:
+            print(f"[DEBUG] is_dictation was False! ke type: {type(ke)}, ke: {ke}")
+            file_bytes = ExportService.generate_pdf_bytes(report, doctor, patient)
+            filename = f"SOAP_Report_{safe_id}.pdf"
 
         media_type = "application/pdf"
-
-        filename = (
-            f"SOAP_Report_{safe_id}.pdf"
-        )
+        print(f"[DEBUG] Returning PDF. is_dictation={is_dictation}")
 
     return StreamingResponse(
         io.BytesIO(file_bytes),

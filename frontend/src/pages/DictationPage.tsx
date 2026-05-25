@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { 
-  Mic, MicOff, Upload, FileText, Printer, 
+  Mic, MicOff, Upload, FileText, Printer, Save,
   RefreshCw, Trash2, ArrowRight, User, AlertCircle,
   Volume2
 } from 'lucide-react'
@@ -32,6 +32,8 @@ export default function DictationPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [pdfGenerating, setPdfGenerating] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
   // MediaRecorder refs
@@ -63,6 +65,7 @@ export default function DictationPage() {
   const handleClear = () => {
     clearDictation()
     setErrorMsg('')
+    setSaveSuccess(false)
   }
 
   // Initialize Speech Recognition for Real-time Display
@@ -316,7 +319,10 @@ export default function DictationPage() {
 
                 {letterheadPreview && (
                   <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, padding: 8, background: '#fff' }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 6 }}>Letterhead Preview:</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)' }}>Letterhead Preview:</div>
+                      <button onClick={() => { setLetterhead(null); setLetterheadPreview(null); }} className="btn-ghost" style={{ padding: 4, color: 'var(--rose)' }}><Trash2 size={12} /></button>
+                    </div>
                     <img 
                       src={letterheadPreview} 
                       alt="Letterhead Preview" 
@@ -490,19 +496,56 @@ export default function DictationPage() {
             </div>
 
             {report && (
-              <button
-                onClick={handlePrint}
-                disabled={pdfGenerating}
-                className="btn btn-primary btn-sm"
-                style={{ borderRadius: 8 }}
-              >
-                {pdfGenerating ? (
-                  <RefreshCw size={13} className="spin" />
-                ) : (
-                  <Printer size={13} />
-                )}
-                Print Branded PDF
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={async () => {
+                    setIsSaving(true)
+                    setSaveSuccess(false)
+                    setErrorMsg('')
+                    try {
+                      await dictationApi.save(report, letterhead)
+                      setSaveSuccess(true)
+                      setTimeout(() => setSaveSuccess(false), 3000)
+                    } catch (err: any) {
+                      console.error("Save error:", err)
+                      setErrorMsg("Failed to save report to database.")
+                    } finally {
+                      setIsSaving(false)
+                    }
+                  }}
+                  disabled={isSaving || pdfGenerating}
+                  className="btn btn-sm"
+                  style={{ 
+                    borderRadius: 8, 
+                    background: saveSuccess ? '#0d9488' : 'var(--teal)', 
+                    color: '#fff', 
+                    border: 'none',
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  {isSaving ? (
+                    <RefreshCw size={13} className="spin" />
+                  ) : saveSuccess ? (
+                    <Save size={13} />
+                  ) : (
+                    <Save size={13} />
+                  )}
+                  {saveSuccess ? 'Saved!' : 'Save Branded Report'}
+                </button>
+                <button
+                  onClick={handlePrint}
+                  disabled={pdfGenerating || isSaving}
+                  className="btn btn-primary btn-sm"
+                  style={{ borderRadius: 8 }}
+                >
+                  {pdfGenerating ? (
+                    <RefreshCw size={13} className="spin" />
+                  ) : (
+                    <Printer size={13} />
+                  )}
+                  Print Branded PDF
+                </button>
+              </div>
             )}
           </div>
 

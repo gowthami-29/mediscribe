@@ -5,7 +5,7 @@ import { FileText, Search, Image } from 'lucide-react'
 
 export default function ReportsPage() {
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'soap' | 'radiology'>('soap')
+  const [activeTab, setActiveTab] = useState<'soap' | 'rag' | 'dictation' | 'radiology'>('soap')
 
   return (
     <div className="fade-in">
@@ -19,7 +19,7 @@ export default function ReportsPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Search ${activeTab === 'soap' ? 'SOAP notes' : 'radiology reports'}...`}
+              placeholder={`Search ${activeTab === 'soap' ? 'SOAP notes' : activeTab === 'dictation' ? 'Voice dictation reports' : 'radiology reports'}...`}
               className="form-control"
               style={{ paddingLeft: 32, width: '100%' }}
             />
@@ -63,6 +63,48 @@ export default function ReportsPage() {
           <FileText size={16} /> Clinical SOAP Notes
         </button>
         <button
+          onClick={() => setActiveTab('rag')}
+          style={{
+            padding: '10px 16px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'rag' ? '2px solid var(--blue)' : '2px solid transparent',
+            color: activeTab === 'rag' ? 'var(--blue)' : 'var(--text-3)',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          <FileText size={16} /> Clinical RAG Reports
+        </button>
+        <button
+          onClick={() => setActiveTab('dictation')}
+          style={{
+            padding: '10px 16px',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'dictation' ? '2px solid #ec4899' : '2px solid transparent',
+            color: activeTab === 'dictation' ? '#ec4899' : 'var(--text-3)',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          <FileText size={16} /> Voice Dictation Reports
+        </button>
+        <button
           onClick={() => setActiveTab('radiology')}
           style={{
             padding: '10px 16px',
@@ -85,9 +127,16 @@ export default function ReportsPage() {
         </button>
       </div>
 
-      {activeTab === 'soap' ? (
-        <ReportList search={search} />
-      ) : (
+      {activeTab === 'soap' && (
+        <ReportList search={search} filterType="soap" />
+      )}
+      {activeTab === 'rag' && (
+        <ReportList search={search} filterType="rag" />
+      )}
+      {activeTab === 'dictation' && (
+        <ReportList search={search} filterType="dictation" />
+      )}
+      {activeTab === 'radiology' && (
         <RadiologyReportList />
       )}
     </div>

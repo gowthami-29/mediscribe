@@ -71,3 +71,10 @@ def generate_signed_url(file_key):
     )
 
     return url
+
+def get_image_bytes(file_key):
+    response = s3.get_object(
+        Bucket=os.getenv("B2_BUCKET_NAME"),
+        Key=file_key
+    )
+    return response['Body'].read()

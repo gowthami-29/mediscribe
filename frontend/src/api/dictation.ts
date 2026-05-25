@@ -96,4 +96,23 @@ export const dictationApi = {
     })
     return res.data
   },
+
+  /**
+   * Save the final edited report to the DB.
+   */
+  save: async (
+    report: DictationReport,
+    letterheadFile?: File | null
+  ): Promise<{ success: boolean; report_id: string }> => {
+    const form = new FormData()
+    form.append('report_data', JSON.stringify(report))
+    if (letterheadFile) {
+      form.append('letterhead', letterheadFile, letterheadFile.name)
+    }
+
+    const res = await apiClient.post('/dictation/save', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data
+  },
 }
