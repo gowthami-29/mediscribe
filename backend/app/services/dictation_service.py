@@ -45,12 +45,17 @@ class DictationService:
         """
         audio_path = None
         try:
-            # Step 1: Save audio
-            audio_path = DictationService._save_temp_file(audio_bytes, audio_ext)
+            if audio_ext == 'txt':
+                transcript = audio_bytes.decode('utf-8')
+                transcription_result = {"confidence": 1.0}
+            else:
+                # Step 1: Save audio
+                audio_path = DictationService._save_temp_file(audio_bytes, audio_ext)
 
-            # Step 2: Transcribe
-            transcription_result = transcribe_audio(audio_path)
-            transcript = transcription_result.get("text", "")
+                # Step 2: Transcribe
+                transcription_result = transcribe_audio(audio_path)
+                transcript = transcription_result.get("text", "")
+
             if not transcript:
                 return {
                     "success": False,

@@ -75,7 +75,10 @@ export default function PatientForm({ initial, onSuccess }: Props) {
       </label>
       <input
         type={type}
-        {...register(name, { required: required ? `${label} is required` : false })}
+        {...register(name, { 
+          required: required ? `${label} is required` : false,
+          ...(type === 'number' ? { min: { value: 0.01, message: 'Invalid' } } : {})
+        })}
         className="form-control"
         style={{ marginBottom: 0, height: 38, fontSize: 13 }}
       />
@@ -145,7 +148,7 @@ export default function PatientForm({ initial, onSuccess }: Props) {
           <input
             type="email"
             {...register('email', { 
-              pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email' }
+              pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Please enter a valid email address' }
             })}
             className="form-control"
             style={{ marginBottom: 0, height: 38, fontSize: 13 }}
@@ -159,8 +162,8 @@ export default function PatientForm({ initial, onSuccess }: Props) {
           <input
             type="tel"
             {...register('phone', { 
-              required: 'Phone number is required',
-              pattern: { value: /^[+]?[0-9]{10,14}$/, message: '10-14 digits required' }
+              required: 'Phone Number is required',
+              pattern: { value: /^\d{10}$/, message: 'Phone number must contain 10 digits' }
             })}
             className="form-control"
             style={{ marginBottom: 0, height: 38, fontSize: 13 }}

@@ -255,7 +255,7 @@ class AnalysisService:
                 soap_json = generate_soap(record.extracted_text or "")
         elif record.source_file_type == "image" and file_path and os.path.exists(file_path):
             from app.core.ai import generate_soap_from_image
-            soap_json = generate_soap_from_image(file_path, context=record.extracted_text or "")
+            soap_json = generate_soap_from_image(file_path, context=record.extracted_text or "", historical_context=historical_context)
         else:
             # Standard Patient RAG Mode
             soap_json = generate_soap(

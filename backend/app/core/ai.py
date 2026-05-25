@@ -290,7 +290,7 @@ def generate_population_report(disease_context: str, population_context: str):
         return _json_error(f"Population report generation exception: {str(e)}")
 
 
-def generate_soap_from_image(image_path: str, context: str = "", population_context: str = ""):
+def generate_soap_from_image(image_path: str, context: str = "", population_context: str = "", historical_context: str = ""):
     if not OPENAI_API_KEY or not ENDPOINT:
         return _json_error("AI image analysis unavailable")
 
@@ -320,6 +320,16 @@ def generate_soap_from_image(image_path: str, context: str = "", population_cont
             )
         else:
             system_msg = "You are a careful medical AI assistant that extracts clinical information into SOAP JSON."
+
+        if historical_context:
+            system_msg += (
+                f"\n\n[HISTORICAL CONTEXT]\n{historical_context}\n\n"
+                "CRITICAL INSTRUCTION: You MUST actively incorporate the patient's past medical history, "
+                "allergies, and previous conditions from the [HISTORICAL CONTEXT] into this new SOAP note. "
+                "Do not ignore the historical context. For example, explicitly list known allergies and past "
+                "major conditions in the Subjective or Assessment sections, and ensure your Plan does not "
+                "contradict known allergies."
+            )
 
         body = {
             "messages": [

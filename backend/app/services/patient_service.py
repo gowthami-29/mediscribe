@@ -4,9 +4,20 @@ from typing import List, Optional
 from app.models.patient import Patient
 from app.schemas.patient import PatientCreate, PatientUpdate
 
+from fastapi import HTTPException
+
 class PatientService:
     @staticmethod
     def create_patient(db: Session, patient_data: PatientCreate, user_id: str, organization_id: str):
+        if patient_data.medical_id:
+            existing = db.query(Patient).filter(
+                Patient.organization_id == organization_id,
+                Patient.medical_id == patient_data.medical_id,
+                Patient.deleted_at == None
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Medical ID already exists")
+
         new_patient = Patient(
             **patient_data.dict(),
             user_id=user_id,
