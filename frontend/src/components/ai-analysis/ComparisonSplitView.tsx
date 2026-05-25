@@ -6,7 +6,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 
-import { apiClient } from '@/api/client'
+import { apiClient, API_BASE_URL } from '@/api/client'
 
 interface ComparisonSplitViewProps {
   patientId: string
@@ -113,7 +113,9 @@ export const ComparisonSplitView: React.FC<
 
             <img
               src={
-                selectedHistoricalScan.image_url
+                selectedHistoricalScan.image_url.toLowerCase().includes('.dcm')
+                  ? `${API_BASE_URL}/radiology/image/${selectedHistoricalScan.report_id}`
+                  : selectedHistoricalScan.image_url
               }
               alt="Historical Xray"
               className="w-full h-full object-contain"

@@ -86,7 +86,7 @@ class RagService:
         sql = text("""
             SELECT content, source_type, created_at, 1 - (embedding <=> :embedding) as similarity
             FROM document_embeddings
-            WHERE patient_id = :patient_id
+            WHERE patient_id = :patient_id AND (embedding <=> :embedding) < 0.7
             ORDER BY embedding <=> :embedding
             LIMIT :limit
         """)
@@ -138,6 +138,7 @@ class RagService:
         sql = text("""
             SELECT patient_id, content, source_type, created_at, 1 - (embedding <=> :embedding) as similarity
             FROM document_embeddings
+            WHERE (embedding <=> :embedding) < 0.7
             ORDER BY embedding <=> :embedding
             LIMIT :limit
         """)

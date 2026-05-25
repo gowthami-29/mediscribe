@@ -13,6 +13,9 @@ import logging
 from fastapi import Body
 from fastapi.responses import StreamingResponse
 from app.services.export_service import ExportService
+from app.services.dictation_service import DictationService
+import os
+import json
 from app.models.patient import Patient
 from app.models.user import User
 import io
@@ -316,20 +319,61 @@ def export_report(
         )
 
     else:
+        ke = report.key_entities
+        if ke and isinstance(ke, str):
+            try:
+                ke = json.loads(ke)
+            except Exception:
+                pass
 
-        file_bytes = (
-            ExportService.generate_pdf_bytes(
-                report,
-                doctor,
-                patient
+        is_dictation = isinstance(ke, dict) and ke.get("source") == "voice_dictation"
+
+        if is_dictation:
+            report_dict = ke.get("original_dictation", {})
+            if not report_dict:
+                subj = json.loads(report.subjective) if report.subjective and isinstance(report.subjective, str) else report.subjective or {}
+                obj = json.loads(report.objective) if report.objective and isinstance(report.objective, str) else report.objective or {}
+                asses = json.loads(report.assessment) if report.assessment and isinstance(report.assessment, str) else report.assessment or {}
+                plan = json.loads(report.plan) if report.plan and isinstance(report.plan, str) else report.plan or {}
+                report_dict = {
+                    "indication": subj.get("indication", ""),
+                    "history": subj.get("history", ""),
+                    "findings": obj.get("findings", ""),
+                    "impression": asses.get("impression", ""),
+                    "plan": plan.get("plan", ""),
+                    "follow_up": plan.get("follow_up", ""),
+                    "notes": plan.get("notes", ""),
+                    "medications": report.medications or [],
+                    "patient_name": ke.get("patient_name", patient.full_name),
+                    "doctor_name": getattr(doctor, "full_name", ""),
+                    "date": str(report.created_at.date()) if report.created_at else ""
+                }
+
+            letterhead_bytes = None
+            letterhead_ext = "png"
+            lh_path = ke.get("letterhead_path")
+            if lh_path and os.path.exists(lh_path):
+                with open(lh_path, "rb") as f:
+                    letterhead_bytes = f.read()
+                letterhead_ext = lh_path.rsplit(".", 1)[-1].lower() if "." in lh_path else "png"
+
+            file_bytes = DictationService.generate_pdf(
+                report_dict,
+                letterhead_bytes=letterhead_bytes,
+                letterhead_ext=letterhead_ext
             )
-        )
+            filename = f"Dictation_Report_{safe_id}.pdf"
+        else:
+            file_bytes = (
+                ExportService.generate_pdf_bytes(
+                    report,
+                    doctor,
+                    patient
+                )
+            )
+            filename = f"SOAP_Report_{safe_id}.pdf"
 
         media_type = "application/pdf"
-
-        filename = (
-            f"SOAP_Report_{safe_id}.pdf"
-        )
 
     return StreamingResponse(
         io.BytesIO(file_bytes),

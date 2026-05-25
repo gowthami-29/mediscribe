@@ -18,9 +18,10 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; border: string;
 
 interface Props {
   search?: string
+  filterType: 'soap' | 'rag' | 'dictation' | 'all'
 }
 
-export default function ReportList({ search = '' }: Props) {
+export default function ReportList({ search = '', filterType = 'all' }: Props) {
   const [editSoapId, setEditSoapId] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
@@ -36,7 +37,16 @@ export default function ReportList({ search = '' }: Props) {
     queryFn: () => patientsApi.list(),
   })
 
-  const allReports: any[] = Array.isArray(data) ? data : (data as any)?.data ?? []
+  const allReports: any[] = (Array.isArray(data) ? data : (data as any)?.data ?? []).filter((r: any) => {
+    const isVoiceDictation = r.key_entities?.source === 'voice_dictation';
+    const isClinicalRag = !!r.key_entities?.analysis_id;
+    const isSoap = !isVoiceDictation && !isClinicalRag;
+
+    if (filterType === 'soap') return isSoap;
+    if (filterType === 'rag') return isClinicalRag;
+    if (filterType === 'dictation') return isVoiceDictation;
+    return true
+  })
   const patients: any[] = Array.isArray(patientsData) ? patientsData : (patientsData as any)?.data ?? []
 
   const getPatient = (report: any) => {
@@ -130,7 +140,7 @@ export default function ReportList({ search = '' }: Props) {
       <div className="card" style={{ overflow: 'hidden' }}>
         <div className="stack-on-mobile" style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ fontSize: 14, margin: 0, fontFamily: 'DM Sans, sans-serif', fontWeight: 600, color: 'var(--text-2)' }}>
-            All SOAP Reports
+            {filterType === 'dictation' ? 'Voice Dictation Reports' : 'All SOAP Reports'}
           </h3>
           <button
             onClick={() => refetch()}
@@ -186,7 +196,7 @@ export default function ReportList({ search = '' }: Props) {
                           </div>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-1)' }}>
-                              SOAP Report
+                              {filterType === 'dictation' ? 'Dictation Report' : 'SOAP Report'}
                             </div>
                             <code style={{ fontSize: 11, color: 'var(--text-3)' }}>
                               #{r.report_id?.slice(0, 8)}…
@@ -224,18 +234,33 @@ export default function ReportList({ search = '' }: Props) {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 7, justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => setEditSoapId(r.consultation_id || r.report_id)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 5,
-                              padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
-                              background: r.status === 'approved' ? '#0d9488' : '#7c3aed', color: '#fff',
-                              border: 'none', fontSize: 11.5, fontWeight: 600,
-                              transition: 'all 0.15s',
-                            }}
-                          >
-                            <Edit2 size={12} /> {r.status === 'approved' ? 'View' : 'Edit'}
-                          </button>
+                          {filterType === 'dictation' || r.key_entities?.source === 'voice_dictation' ? (
+                            <button
+                              onClick={() => handleExport(r.report_id, 'pdf')}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+                                background: '#0d9488', color: '#fff',
+                                border: 'none', fontSize: 11.5, fontWeight: 600,
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              <FileText size={12} /> View Branded PDF
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setEditSoapId(r.consultation_id || r.report_id)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+                                background: r.status === 'approved' ? '#0d9488' : '#7c3aed', color: '#fff',
+                                border: 'none', fontSize: 11.5, fontWeight: 600,
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              <Edit2 size={12} /> {r.status === 'approved' ? 'View' : 'Edit'}
+                            </button>
+                          )}
                           
                           <button
                             onClick={() => handleDelete(r.report_id)}

@@ -236,11 +236,11 @@ class DictationService:
                     story.append(Paragraph(label.upper(), section_label))
                     story.append(Paragraph(text.strip(), body_style))
 
-            add_section("Indication / Chief Complaint", report.get("indication", ""))
+            add_section("Indication", report.get("indication", ""))
             add_section("History", report.get("history", ""))
-            add_section("Findings", report.get("findings", ""))
+            add_section("Findings & Vitals", report.get("findings", ""))
             add_section("Impression / Diagnosis", report.get("impression", ""))
-            add_section("Plan", report.get("plan", ""))
+            add_section("Treatment Plan", report.get("plan", ""))
 
             # Medications
             meds = report.get("medications", [])
@@ -250,7 +250,7 @@ class DictationService:
                     med_text = med if isinstance(med, str) else str(med)
                     story.append(Paragraph(f"{i}. {med_text}", body_style))
 
-            add_section("Follow-up", report.get("follow_up", ""))
+            add_section("Follow-up Instructions", report.get("follow_up", ""))
             add_section("Additional Notes", report.get("notes", ""))
 
             # ── Signature line ─────────────────────────────────────────────────────

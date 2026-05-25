@@ -6,6 +6,9 @@ from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends
 from fastapi.responses import Response
 
 from app.core.deps import get_current_user
+from app.db.deps import get_db
+from app.models.report import Report
+from sqlalchemy.orm import Session
 from app.services.dictation_service import DictationService
 
 router = APIRouter()
@@ -172,3 +175,73 @@ async def generate_pdf_from_report(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+@router.post("/save")
+async def save_dictation(
+    report_data: str = Form(..., description="JSON string of the dictation report"),
+    letterhead: Optional[UploadFile] = File(None, description="Clinic letterhead image (PNG/JPG)"),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Saves the final, edited Voice Dictation report and letterhead to the database.
+    """
+    try:
+        import json
+        report_dict = json.loads(report_data)
+        
+        letterhead_path = None
+        if letterhead and letterhead.filename:
+            upload_dir = os.path.join(os.getcwd(), "uploads", "letterheads")
+            os.makedirs(upload_dir, exist_ok=True)
+            ext = letterhead.filename.rsplit(".", 1)[-1].lower() if "." in letterhead.filename else "png"
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            file_path = os.path.join(upload_dir, filename)
+            with open(file_path, "wb") as buffer:
+                buffer.write(await letterhead.read())
+            letterhead_path = file_path
+
+        subjective_data = {
+            "indication": report_dict.get("indication", ""),
+            "history": report_dict.get("history", "")
+        }
+        objective_data = {
+            "findings": report_dict.get("findings", "")
+        }
+        assessment_data = {
+            "impression": report_dict.get("impression", "")
+        }
+        plan_data = {
+            "plan": report_dict.get("plan", ""),
+            "follow_up": report_dict.get("follow_up", ""),
+            "notes": report_dict.get("notes", "")
+        }
+
+        db_report = Report(
+            user_id=current_user.user_id,
+            organization_id=current_user.organization_id,
+            status="approved",
+            subjective=json.dumps(subjective_data),
+            objective=json.dumps(objective_data),
+            assessment=json.dumps(assessment_data),
+            plan=json.dumps(plan_data),
+            medications=report_dict.get("medications", []),
+            key_entities={
+                "source": "voice_dictation",
+                "letterhead_path": letterhead_path,
+                "original_dictation": report_dict
+            }
+        )
+        
+        if report_dict.get("patient_name"):
+            db_report.key_entities["patient_name"] = report_dict.get("patient_name")
+            
+        db.add(db_report)
+        db.commit()
+        db.refresh(db_report)
+        
+        return {"success": True, "report_id": db_report.report_id}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save dictation report: {str(e)}")

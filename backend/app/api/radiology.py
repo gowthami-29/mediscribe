@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import cast, String
 from app.core.deps import get_current_user
 from uuid import UUID
 from fastapi.responses import Response
@@ -12,7 +13,8 @@ from app.services.radiology_service import (
 
 from app.services.storage_service import (
     upload_image,
-    generate_signed_url
+    generate_signed_url,
+    get_image_bytes
 )
 
 from app.services.dicom_service import (
@@ -165,6 +167,27 @@ async def analyze_xray(
         }
     }
 
+
+@router.get("/image/{report_id}")
+async def get_radiology_image(report_id: UUID):
+    db: Session = SessionLocal()
+    report = db.query(RadiologyReport).filter(RadiologyReport.id == report_id).first()
+    db.close()
+    
+    if not report:
+        return Response(status_code=404, content="Report not found")
+        
+    try:
+        file_bytes = get_image_bytes(report.image_url)
+        
+        if report.image_url.lower().endswith('.dcm'):
+            png_bytes, _ = dicom_to_png_bytes(file_bytes)
+            return Response(content=png_bytes, media_type="image/png")
+        else:
+            return Response(content=file_bytes, media_type="application/octet-stream")
+            
+    except Exception as e:
+        return Response(status_code=500, content=f"Failed to fetch image: {str(e)}")
 
 @router.get("/patient-radiology-history/{patient_id}")
 async def get_patient_radiology_history(
@@ -322,8 +345,8 @@ async def get_all_reports(current_user=Depends(get_current_user)):
 
     reports = (
         db.query(RadiologyReport)
-        .join(Patient, Patient.patient_id == RadiologyReport.patient_id)
-        .filter(Patient.organization_id == current_user.organization_id)
+        .join(Patient, Patient.patient_id == cast(RadiologyReport.patient_id, String))
+        .filter(Patient.user_id == current_user.user_id)
         .order_by(
             RadiologyReport.created_at.desc()
         )
