@@ -38,7 +38,8 @@ export const dictationApi = {
     patientContext?: string
   ): Promise<DictationResult> => {
     const form = new FormData()
-    form.append('audio', audioBlob, 'recording.webm')
+    const isText = audioBlob.type === 'text/plain'
+    form.append('audio', audioBlob, isText ? 'transcript.txt' : 'recording.webm')
     if (letterheadFile) {
       form.append('letterhead', letterheadFile, letterheadFile.name)
     }

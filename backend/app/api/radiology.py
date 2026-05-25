@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from sqlalchemy.orm import Session
+from app.core.deps import get_current_user
 from uuid import UUID
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -315,12 +316,14 @@ async def get_similar_reports(
 
 
 @router.get("/all-reports")
-async def get_all_reports():
+async def get_all_reports(current_user=Depends(get_current_user)):
 
     db: Session = SessionLocal()
 
     reports = (
         db.query(RadiologyReport)
+        .join(Patient, Patient.patient_id == RadiologyReport.patient_id)
+        .filter(Patient.organization_id == current_user.organization_id)
         .order_by(
             RadiologyReport.created_at.desc()
         )
