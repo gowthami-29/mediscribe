@@ -23,6 +23,8 @@ class RadiologyReport(Base):
     
     image_url = Column(Text)
 
+    thumbnail_url = Column(Text, nullable=True)
+
     study_date = Column(Text)
 
     indication = Column(Text)
@@ -30,6 +32,8 @@ class RadiologyReport(Base):
     technique = Column(Text)
 
     findings = Column(Text)
+
+    
 
     impression = Column(Text)
 

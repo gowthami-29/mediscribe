@@ -12,7 +12,8 @@ from app.services.radiology_service import (
 
 from app.services.storage_service import (
     upload_image,
-    generate_signed_url
+    generate_signed_url,
+    generate_thumbnail
 )
 
 from app.services.dicom_service import (
@@ -63,6 +64,39 @@ async def analyze_xray(
         raw_storage_bytes,
         file.filename
     )
+    thumbnail_key = None
+
+    try:
+
+        print(
+            "GENERATING THUMBNAIL..."
+        )
+
+        thumbnail_bytes = generate_thumbnail(
+            image_bytes
+        )
+
+        print(
+            "THUMBNAIL SIZE:",
+            len(thumbnail_bytes)
+        )
+
+        thumbnail_key = upload_image(
+            thumbnail_bytes,
+            f"thumb-{file.filename}"
+        )
+
+        print(
+            "THUMBNAIL UPLOADED:",
+            thumbnail_key
+        )
+
+    except Exception as e:
+
+        print(
+            "THUMBNAIL ERROR:",
+            str(e)
+        )
 
     # Fetch previous reports
     previous_reports = (
@@ -104,6 +138,8 @@ async def analyze_xray(
 
         image_url=image_key,
 
+        thumbnail_url=thumbnail_key,
+
         modality=metadata.get("modality", ""),
 
         body_part=metadata.get("body_part", ""),
@@ -141,6 +177,13 @@ async def analyze_xray(
     signed_image_url = generate_signed_url(
         db_report.image_url
     )
+    signed_thumbnail_url = (
+        generate_signed_url(
+            db_report.thumbnail_url
+        )
+        if db_report.thumbnail_url
+        else None
+    )
 
     db.close()
 
@@ -156,6 +199,8 @@ async def analyze_xray(
         ),
 
         "image_url": signed_image_url,
+
+        "thumbnail_url":signed_thumbnail_url,
 
         "dicom_metadata": metadata,
 
@@ -191,12 +236,21 @@ async def get_patient_radiology_history(
         signed_image_url = generate_signed_url(
             report.image_url
         )
+        signed_thumbnail_url = (
+            generate_signed_url(
+                report.thumbnail_url
+            )
+            if report.thumbnail_url
+            else None
+        )
 
         history.append({
 
             "report_id": str(report.id),
 
             "image_url": signed_image_url,
+
+            "thumbnail_url":signed_thumbnail_url,
 
             "modality": report.modality,
 

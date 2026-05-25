@@ -55,44 +55,134 @@ export default function RadiologyPanel() {
 
   // Trigger Azure Vision AI Analysis
   const handleAnalyze = async () => {
-    if (!patientId) {
-      toast.error('Please link a patient to match medical records')
-      return
-    }
-    if (!selectedFile) {
-      toast.error('Please select or upload an X-ray image')
-      return
-    }
 
-    setLoading(true)
-    setStatusText('Uploading radiology scan to secure storage...')
-    setReport(null)
-    setReportId(null)
-    setShowComparison(false)
-    setIsApproved(false)
+  if (!patientId) {
 
-    try {
-      setTimeout(() => setStatusText('Analyzing image utilizing Azure OpenAI Vision...'), 1500)
-      setTimeout(() => setStatusText('Cross-referencing findings with patient history...'), 3500)
-      setTimeout(() => setStatusText('Generating structured radiology JSON report...'), 5500)
+    toast.error(
+      'Please link a patient to match medical records'
+    )
 
-      const response = await radiologyApi.analyzeXray(patientId, selectedFile)
-      
-      if (response.success && response.report) {
-        setReport(response.report)
-        setReportId(response.report_id)
-        toast.success('Radiology Vision analysis complete!')
-      } else {
-        toast.error('Failed to analyze radiology image')
-      }
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err.response?.data?.detail || 'Analysis failed. Check backend console.')
-    } finally {
-      setLoading(false)
-      setStatusText('')
-    }
+    return
   }
+
+  if (!selectedFile) {
+
+    toast.error(
+      'Please select or upload an X-ray image'
+    )
+
+    return
+  }
+
+  setLoading(true)
+
+  setStatusText(
+    'Uploading radiology scan to secure storage...'
+  )
+
+  setReport(null)
+
+  setReportId(null)
+
+  setShowComparison(false)
+
+  setIsApproved(false)
+
+  try {
+
+    console.log(
+      "UPLOADING FILE:",
+      selectedFile
+    )
+
+    setTimeout(() => {
+
+      setStatusText(
+        'Analyzing image utilizing Azure OpenAI Vision...'
+      )
+
+    }, 1500)
+
+    setTimeout(() => {
+
+      setStatusText(
+        'Cross-referencing findings with patient history...'
+      )
+
+    }, 3500)
+
+    setTimeout(() => {
+
+      setStatusText(
+        'Generating structured radiology JSON report...'
+      )
+
+    }, 5500)
+
+    const response =
+      await radiologyApi.analyzeXray(
+        patientId,
+        selectedFile
+      )
+
+    console.log(
+      "ANALYZE RESPONSE:",
+      response
+    )
+
+    if (
+      response.success &&
+      response.report
+    ) {
+
+      setReport(
+        response.report
+      )
+
+      setReportId(
+        response.report_id
+      )
+
+      toast.success(
+        'Radiology Vision analysis complete!'
+      )
+
+      // Refresh comparison history
+
+      setShowComparison(false)
+
+      setTimeout(() => {
+
+        setShowComparison(true)
+
+      }, 100)
+
+    } else {
+
+      toast.error(
+        'Failed to analyze radiology image'
+      )
+    }
+
+  } catch (err: any) {
+
+    console.error(
+      "ANALYZE ERROR:",
+      err
+    )
+
+    toast.error(
+      err.response?.data?.detail ||
+      'Analysis failed. Check backend console.'
+    )
+
+  } finally {
+
+    setLoading(false)
+
+    setStatusText('')
+  }
+}
 
   // Search similar reports with pgvector
   const handleSearchSimilar = async (queryStr = searchQuery) => {

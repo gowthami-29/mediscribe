@@ -1,7 +1,8 @@
 import boto3
 import uuid
 import os
-
+from PIL import Image
+from io import BytesIO
 from botocore.client import Config
 
 
@@ -34,7 +35,27 @@ def upload_image(file_bytes, filename):
 
     return unique_name
 
+def generate_thumbnail(file_bytes):
 
+    image = Image.open(
+        BytesIO(file_bytes)
+    )
+
+    image = image.convert("RGB")
+
+    image.thumbnail((300, 300))
+
+    output = BytesIO()
+
+    image.save(
+        output,
+        format="JPEG",
+        quality=85
+    )
+
+    output.seek(0)
+
+    return output.read()
 def generate_signed_url(file_key):
 
     url = s3.generate_presigned_url(
