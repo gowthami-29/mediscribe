@@ -492,34 +492,21 @@ export const ComparisonSplitView: React.FC<
                     "
                   >
 
-                    {scan.thumbnail_url ? (
-
-                      <img
-                        src={
-                          scan.thumbnail_url
-                        }
-
-                        alt="thumbnail"
-
-                        className="
-                          w-full
-                          h-full
-                          object-cover
-                        "
-                      />
-
-                    ) : (
-
-                      <div
-                        className="
-                          text-slate-500
-                          text-sm
-                        "
-                      >
-                        No Preview
-                      </div>
-
-                    )}
+                    <img
+                      src={
+                        scan.thumbnail_url || (
+                          scan.image_url?.toLowerCase().includes('.dcm')
+                            ? `${API_BASE_URL}/radiology/image/${scan.report_id}`
+                            : scan.image_url
+                        )
+                      }
+                      alt="thumbnail"
+                      className="
+                        w-full
+                        h-full
+                        object-cover
+                      "
+                    />
 
                   </div>
 
