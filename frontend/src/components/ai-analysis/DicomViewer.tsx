@@ -237,6 +237,45 @@ React.FC<DicomViewerProps> = ({
               image
             )
 
+            // Add stack state
+
+            cornerstoneTools.addStackStateManager(
+              element,
+              ['stack']
+            )
+
+            cornerstoneTools.addToolState(
+              element,
+              'stack',
+              {
+                currentImageIdIndex: 0,
+                imageIds: [imageId]
+              }
+            )
+
+            // Default active tools
+
+            cornerstoneTools.setToolActive(
+              'Pan',
+              {
+                mouseButtonMask: 1
+              }
+            )
+
+            cornerstoneTools.setToolActive(
+              'Zoom',
+              {
+                mouseButtonMask: 2
+              }
+            )
+
+            cornerstoneTools.setToolActive(
+              'Wwwc',
+              {
+                mouseButtonMask: 4
+              }
+            )
+
             setIsLoaded(true)
           }
 
