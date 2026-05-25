@@ -120,11 +120,11 @@ React.FC<DicomViewerProps> = ({
         .endsWith('.dcm')
     )
 
-  const initializeTools = () => {
+  const initializeTools = (element: HTMLElement) => {
 
     const added =
       (
-        window as any
+        element as any
       ).__cornerstoneToolsAdded
 
     if (added) return
@@ -142,24 +142,32 @@ React.FC<DicomViewerProps> = ({
       )
     }
 
-    cornerstoneTools.addTool(
-      cornerstoneTools.WwwcTool
-    )
+    try {
+      cornerstoneTools.addToolForElement(
+        element,
+        cornerstoneTools.WwwcTool
+      )
 
-    cornerstoneTools.addTool(
-      cornerstoneTools.PanTool
-    )
+      cornerstoneTools.addToolForElement(
+        element,
+        cornerstoneTools.PanTool
+      )
 
-    cornerstoneTools.addTool(
-      cornerstoneTools.ZoomTool
-    )
+      cornerstoneTools.addToolForElement(
+        element,
+        cornerstoneTools.ZoomTool
+      )
 
-    cornerstoneTools.addTool(
-      cornerstoneTools.LengthTool
-    )
+      cornerstoneTools.addToolForElement(
+        element,
+        cornerstoneTools.LengthTool
+      )
+    } catch (e) {
+      console.warn('Tools already added to element')
+    }
 
     ;(
-      window as any
+      element as any
     ).__cornerstoneToolsAdded = true
   }
 
@@ -183,9 +191,10 @@ React.FC<DicomViewerProps> = ({
 
     cornerstone.enable(element)
 
-    initializeTools()
+    initializeTools(element)
 
-    cornerstoneTools.setToolActive(
+    cornerstoneTools.setToolActiveForElement(
+      element,
       'Pan',
       {
         mouseButtonMask: 1
@@ -255,21 +264,24 @@ React.FC<DicomViewerProps> = ({
 
             // Default active tools
 
-            cornerstoneTools.setToolActive(
+            cornerstoneTools.setToolActiveForElement(
+              element,
               'Pan',
               {
                 mouseButtonMask: 1
               }
             )
 
-            cornerstoneTools.setToolActive(
+            cornerstoneTools.setToolActiveForElement(
+              element,
               'Zoom',
               {
                 mouseButtonMask: 2
               }
             )
 
-            cornerstoneTools.setToolActive(
+            cornerstoneTools.setToolActiveForElement(
+              element,
               'Wwwc',
               {
                 mouseButtonMask: 4
@@ -314,23 +326,31 @@ React.FC<DicomViewerProps> = ({
     toolName: string
   ) => {
 
-    cornerstoneTools.setToolPassive(
+    if (!viewerRef.current) return
+    const element = viewerRef.current
+
+    cornerstoneTools.setToolPassiveForElement(
+      element,
       'Pan'
     )
 
-    cornerstoneTools.setToolPassive(
+    cornerstoneTools.setToolPassiveForElement(
+      element,
       'Wwwc'
     )
 
-    cornerstoneTools.setToolPassive(
+    cornerstoneTools.setToolPassiveForElement(
+      element,
       'Zoom'
     )
 
-    cornerstoneTools.setToolPassive(
+    cornerstoneTools.setToolPassiveForElement(
+      element,
       'Length'
     )
 
-    cornerstoneTools.setToolActive(
+    cornerstoneTools.setToolActiveForElement(
+      element,
       toolName,
       {
         mouseButtonMask: 1
