@@ -44,17 +44,93 @@ export default function PatientForm({ initial, onSuccess }: Props) {
   })
 
   const createMut = useMutation({
-    mutationFn: patientsApi.create,
-    onSuccess: () => { toast.success('Patient registered'); onSuccess() },
-    onError: (e: any) => toast.error(e.response?.data?.detail || 'Failed to create patient'),
-  })
+
+  mutationFn: patientsApi.create,
+
+  onSuccess: () => {
+
+    toast.success('Patient registered')
+
+    onSuccess()
+  },
+
+  onError: (e: any) => {
+
+    console.error(e)
+
+  const detail =
+    e.response?.data?.detail
+
+  if (Array.isArray(detail)) {
+
+    toast.error(
+      detail[0]?.msg ||
+      'Validation error'
+    )
+
+    } else if (
+      typeof detail === 'string'
+    ) {
+
+      toast.error(detail)
+
+    } else {
+
+      toast.error(
+        'Failed to create patient'
+      )
+    }
+  },
+})
+
 
   const updateMut = useMutation({
-    mutationFn: (data: Partial<Patient>) => patientsApi.update(initial!.patient_id, data),
-    onSuccess: () => { toast.success('Patient updated'); onSuccess() },
-    onError: (e: any) => toast.error(e.response?.data?.detail || 'Failed to update patient'),
-  })
 
+    mutationFn: (
+      data: Partial<Patient>
+    ) =>
+      patientsApi.update(
+        initial!.patient_id,
+        data
+      ),
+
+    onSuccess: () => {
+
+      toast.success(
+        'Patient updated'
+      )
+
+      onSuccess()
+    },
+
+    onError: (e: any) => {
+
+      console.error(e)
+
+      const detail =
+        e.response?.data?.detail
+
+      if (Array.isArray(detail)) {
+
+        toast.error(
+          detail[0]?.msg ||
+          'Validation error'
+        )
+
+      } else if (
+        typeof detail === 'string'
+      ) {
+
+        toast.error(detail)
+
+      } else {
+
+        toast.error(
+          'Failed to update patient'
+        )
+      }
+    },
+  })
   const onSubmit = (data: CreatePatientPayload) => {
     // Convert numeric fields
     const payload = {
