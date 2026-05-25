@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, {
+  useState,
+  useEffect
+} from 'react'
 
 import {
   Clock,
-  CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft
 } from 'lucide-react'
 
 import { apiClient, API_BASE_URL } from '@/api/client'
@@ -21,7 +24,8 @@ export const ComparisonSplitView: React.FC<
   patientId
 }) => {
 
-  const [history, setHistory] = useState<any[]>([])
+  const [history, setHistory] =
+    useState<any[]>([])
 
   const [
     selectedHistoricalScan,
@@ -86,29 +90,110 @@ export const ComparisonSplitView: React.FC<
   return (
 
     <div
-      className="flex flex-col h-full bg-slate-900/50 rounded-xl border border-slate-800/60 shadow-xl overflow-hidden p-4"
+      className="
+        flex
+        flex-col
+        h-full
+        bg-slate-900/50
+        rounded-xl
+        border
+        border-slate-800/60
+        shadow-xl
+        overflow-hidden
+        p-4
+      "
     >
 
-      <h3
-        className="text-slate-300 font-medium mb-3 flex items-center gap-2"
+      {/* Header */}
+
+      <div
+        className="
+          flex
+          items-center
+          gap-2
+          mb-4
+        "
       >
+
         <Clock
-          className="w-4 h-4 text-emerald-400"
+          className="
+            w-5
+            h-5
+            text-emerald-400
+          "
         />
 
-        Historical Comparison
-      </h3>
+        <h3
+          className="
+            text-slate-200
+            font-semibold
+            text-sm
+            uppercase
+            tracking-wide
+          "
+        >
+          Historical Studies
+        </h3>
+
+      </div>
+
+      {/* Selected Study */}
 
       {selectedHistoricalScan ? (
 
         <div
-          className="flex flex-col flex-1 min-h-0 gap-4"
+          className="
+            flex
+            flex-col
+            flex-1
+            min-h-0
+            gap-4
+          "
         >
 
-          {/* Historical Image */}
+          {/* Back Button */}
+
+          <button
+            onClick={() =>
+              setSelectedHistoricalScan(
+                null
+              )
+            }
+
+            className="
+              flex
+              items-center
+              gap-2
+              text-sm
+              text-indigo-400
+              hover:text-indigo-300
+              mb-1
+            "
+          >
+
+            <ArrowLeft
+              className="w-4 h-4"
+            />
+
+            Back to Timeline
+
+          </button>
+
+          {/* Full Image */}
 
           <div
-            className="bg-slate-900/50 rounded-xl border border-slate-800/60 shadow-xl overflow-hidden h-[300px] shrink-0 flex items-center justify-center"
+            className="
+              bg-black
+              rounded-xl
+              overflow-hidden
+              border
+              border-slate-700
+              h-[320px]
+              flex
+              items-center
+              justify-center
+              shrink-0
+            "
           >
 
             <img
@@ -117,59 +202,126 @@ export const ComparisonSplitView: React.FC<
                   ? `${API_BASE_URL}/radiology/image/${selectedHistoricalScan.report_id}`
                   : selectedHistoricalScan.image_url
               }
-              alt="Historical Xray"
-              className="w-full h-full object-contain"
+
+              alt="Historical Scan"
+
+              className="
+                w-full
+                h-full
+                object-contain
+              "
             />
 
           </div>
 
-          {/* Historical Findings */}
+          {/* Findings */}
 
           <div
-            className="flex-1 bg-slate-800/40 rounded-xl border border-slate-700 p-4 overflow-y-auto"
-            style={{
-              minHeight: 0
-            }}
+            className="
+              flex-1
+              bg-slate-800/40
+              rounded-xl
+              border
+              border-slate-700
+              p-4
+              overflow-y-auto
+            "
           >
 
             <div
-              className="flex items-center justify-between mb-4 pb-2 border-b border-slate-700"
+              className="
+                flex
+                items-center
+                justify-between
+                mb-4
+                pb-2
+                border-b
+                border-slate-700
+              "
             >
 
               <h4
-                className="text-sm font-semibold text-slate-200"
+                className="
+                  text-sm
+                  font-semibold
+                  text-slate-200
+                "
               >
-                Historical Findings
+                AI Radiology Findings
               </h4>
 
-              <button
-                onClick={() =>
-                  setSelectedHistoricalScan(
-                    null
-                  )
-                }
-                className="text-xs text-indigo-400 hover:text-indigo-300"
+              <span
+                className="
+                  px-2
+                  py-1
+                  rounded
+                  bg-indigo-500/20
+                  text-indigo-300
+                  text-xs
+                  font-medium
+                "
               >
-                Back to Timeline
-              </button>
+                {
+                  selectedHistoricalScan.modality ||
+                  "XR"
+                }
+              </span>
 
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
 
               <div>
 
-                <span
-                  className="text-xs font-semibold text-slate-400 uppercase tracking-wider"
+                <p
+                  className="
+                    text-xs
+                    uppercase
+                    tracking-wider
+                    text-slate-500
+                    mb-2
+                  "
                 >
-                  Prior Impression
-                </span>
+                  Impression
+                </p>
 
                 <p
-                  className="text-sm text-slate-300 mt-1 leading-relaxed"
+                  className="
+                    text-sm
+                    text-slate-200
+                    leading-relaxed
+                  "
                 >
                   {
                     selectedHistoricalScan.impression
+                  }
+                </p>
+
+              </div>
+
+              <div>
+
+                <p
+                  className="
+                    text-xs
+                    uppercase
+                    tracking-wider
+                    text-slate-500
+                    mb-2
+                  "
+                >
+                  Findings
+                </p>
+
+                <p
+                  className="
+                    text-sm
+                    text-slate-300
+                    leading-relaxed
+                  "
+                >
+                  {
+                    selectedHistoricalScan.findings
                   }
                 </p>
 
@@ -179,14 +331,24 @@ export const ComparisonSplitView: React.FC<
 
                 <div>
 
-                  <span
-                    className="text-xs font-semibold text-slate-400 uppercase tracking-wider"
+                  <p
+                    className="
+                      text-xs
+                      uppercase
+                      tracking-wider
+                      text-slate-500
+                      mb-2
+                    "
                   >
-                    Previous Comparison
-                  </span>
+                    Comparison
+                  </p>
 
                   <p
-                    className="text-sm text-slate-300 mt-1 leading-relaxed"
+                    className="
+                      text-sm
+                      text-slate-300
+                      leading-relaxed
+                    "
                   >
                     {
                       selectedHistoricalScan.comparison
@@ -206,20 +368,34 @@ export const ComparisonSplitView: React.FC<
       ) : (
 
         <div
-          className="flex-1 bg-slate-800/20 rounded-xl border border-slate-800/60 p-4 overflow-y-auto flex flex-col"
-          style={{
-            minHeight: 0
-          }}
+          className="
+            flex-1
+            overflow-y-auto
+            pr-1
+          "
         >
 
           {loading ? (
 
             <div
-              className="flex flex-1 items-center justify-center"
+              className="
+                flex
+                items-center
+                justify-center
+                h-full
+              "
             >
 
               <div
-                className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"
+                className="
+                  animate-spin
+                  rounded-full
+                  h-10
+                  w-10
+                  border-t-2
+                  border-b-2
+                  border-indigo-500
+                "
               />
 
             </div>
@@ -227,36 +403,56 @@ export const ComparisonSplitView: React.FC<
           ) : history.length === 0 ? (
 
             <div
-              className="flex flex-1 flex-col items-center justify-center text-center"
+              className="
+                flex
+                flex-col
+                items-center
+                justify-center
+                text-center
+                h-full
+              "
             >
 
               <AlertTriangle
-                className="w-10 h-10 text-slate-600 mb-3"
+                className="
+                  w-12
+                  h-12
+                  text-slate-600
+                  mb-3
+                "
               />
 
               <h4
-                className="text-slate-300 font-medium"
+                className="
+                  text-slate-300
+                  font-medium
+                "
               >
-                No Historical Scans
+                No Historical Studies
               </h4>
 
               <p
-                className="text-slate-500 text-sm mt-1"
+                className="
+                  text-slate-500
+                  text-sm
+                  mt-2
+                "
               >
-                This patient has no prior radiology reports on record.
+                This patient has no
+                prior radiology scans.
               </p>
 
             </div>
 
           ) : (
 
-            <div className="space-y-3">
-
-              <p
-                className="text-xs font-medium text-slate-400 mb-4 px-1 uppercase tracking-wider"
-              >
-                Select a prior scan to compare
-              </p>
+            <div
+              className="
+                grid
+                grid-cols-1
+                gap-4
+              "
+            >
 
               {history.map((scan) => (
 
@@ -269,51 +465,123 @@ export const ComparisonSplitView: React.FC<
                     )
                   }
 
-                  className="w-full text-left p-4 rounded-lg bg-slate-800/40 hover:bg-slate-800 transition-colors border border-slate-700 hover:border-indigo-500/50 group"
+                  className="
+                    w-full
+                    rounded-xl
+                    overflow-hidden
+                    border
+                    border-slate-700
+                    bg-slate-900/40
+                    hover:border-indigo-500
+                    hover:scale-[1.01]
+                    transition-all
+                    text-left
+                  "
                 >
 
+                  {/* Thumbnail */}
+
                   <div
-                    className="flex justify-between items-start mb-2"
+                    className="
+                      h-44
+                      bg-black
+                      flex
+                      items-center
+                      justify-center
+                      overflow-hidden
+                    "
                   >
 
+                    {scan.thumbnail_url ? (
+
+                      <img
+                        src={
+                          scan.thumbnail_url
+                        }
+
+                        alt="thumbnail"
+
+                        className="
+                          w-full
+                          h-full
+                          object-cover
+                        "
+                      />
+
+                    ) : (
+
+                      <div
+                        className="
+                          text-slate-500
+                          text-sm
+                        "
+                      >
+                        No Preview
+                      </div>
+
+                    )}
+
+                  </div>
+
+                  {/* Study Info */}
+
+                  <div className="p-4">
+
                     <div
-                      className="flex items-center gap-2"
+                      className="
+                        flex
+                        items-center
+                        justify-between
+                        mb-3
+                      "
                     >
 
                       <span
-                        className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-xs font-medium border border-indigo-500/20"
+                        className="
+                          px-2
+                          py-1
+                          rounded
+                          bg-indigo-500/20
+                          text-indigo-300
+                          text-xs
+                          font-medium
+                        "
                       >
                         {
                           scan.modality ||
-                          'X-RAY'
+                          "XR"
                         }
                       </span>
 
                       <span
-                        className="text-sm font-medium text-slate-200"
+                        className="
+                          text-xs
+                          text-slate-400
+                        "
                       >
                         {
                           scan.study_date ||
-                          scan.created_at?.split(' ')[0]
+                          scan.created_at?.split(" ")[0]
                         }
                       </span>
 
                     </div>
 
-                    <CheckCircle2
-                      className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 transition-colors"
-                    />
+                    <p
+                      className="
+                        text-sm
+                        text-slate-200
+                        line-clamp-2
+                        leading-relaxed
+                      "
+                    >
+                      {
+                        scan.impression ||
+                        "No impression available."
+                      }
+                    </p>
 
                   </div>
-
-                  <p
-                    className="text-sm text-slate-400 line-clamp-2"
-                  >
-                    {
-                      scan.impression ||
-                      "No impression available."
-                    }
-                  </p>
 
                 </button>
 
