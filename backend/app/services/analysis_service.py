@@ -225,11 +225,44 @@ class AnalysisService:
         historical_context = ""
         if record.patient_id:
             try:
+
+                if record.source_file_type == "image":
+
+                    query_for_rag = f"""
+                    {record.source_file_name}
+
+                    {record.generated_objective or ""}
+
+                    {record.generated_assessment or ""}
+                    """
+
+                else:
+
+                    query_for_rag = (
+                        record.extracted_text
+                        or record.source_file_name
+                        or "medical document"
+                    )
+
                 historical_context = RagService.get_augmented_context(
-                    db, 
-                    patient_id=record.patient_id, 
-                    query_text=record.extracted_text or ""
+
+                    db,
+
+                    patient_id=record.patient_id,
+
+                    query_text=query_for_rag
                 )
+
+                print(
+                    "RAG QUERY:",
+                    query_for_rag
+                )
+
+                print(
+                    "RAG CONTEXT:",
+                    historical_context
+                )
+
             except Exception as rag_err:
                 print(f"RAG Retrieval Error: {rag_err}")
 
@@ -255,7 +288,9 @@ class AnalysisService:
                 soap_json = generate_soap(record.extracted_text or "")
         elif record.source_file_type == "image" and file_path and os.path.exists(file_path):
             from app.core.ai import generate_soap_from_image
-            soap_json = generate_soap_from_image(file_path, context=record.extracted_text or "", historical_context=historical_context)
+            soap_json = generate_soap_from_image(file_path,context=f"""
+                                    Historical Context:
+                                    {historical_context} Current Study: {record.source_file_name}    """,historical_context=historical_context)
         else:
             # Standard Patient RAG Mode
             soap_json = generate_soap(
@@ -285,6 +320,66 @@ class AnalysisService:
                     elif isinstance(m, str):
                         sanitized_meds.append({"name": m})
             record.generated_medications = sanitized_meds
+
+            # ==========================================
+            # SAVE FINAL SOAP INTO RAG
+            # ==========================================
+
+            try:
+
+                clean_subjective = (
+                    record.generated_subjective or ""
+                ).replace(
+                    "No historical medical records found for this patient.",
+                    ""
+                ).replace(
+                    "No historical medical records found.",
+                    ""
+                ).replace(
+                    "No historical medical records, past medical history, or allergies available in the provided context.",
+                    ""
+                )
+
+                rag_content = f"""
+
+                SUBJECTIVE:
+                {clean_subjective}
+
+                OBJECTIVE:
+                {record.generated_objective}
+
+                ASSESSMENT:
+                {record.generated_assessment}
+
+                PLAN:
+                {record.generated_plan}
+
+                """
+
+                RagService.index_document(
+
+                    db,
+
+                    patient_id=record.patient_id,
+
+                    source_id=record.analysis_id,
+
+                    source_type="soap_note",
+
+                    content=rag_content
+                )
+
+                print(
+                    "SOAP indexed into RAG"
+                )
+
+            except Exception as rag_index_err:
+
+                print(
+                    "SOAP RAG INDEX ERROR:",
+                    str(rag_index_err)
+                )
+
             record.confidence_score = 94.2
             
             # 2. Intelligent Comparison (Phase 5)
@@ -292,7 +387,7 @@ class AnalysisService:
                 print(f"DEBUG: Checking for previous reports for patient {record.patient_id}...")
                 latest_report = db.query(Report).filter(
                     Report.patient_id == record.patient_id,
-                    Report.status == "finalized"
+                    Report.status.in_(["draft", "approved"])
                 ).order_by(Report.created_at.desc()).first()
 
                 if latest_report:
