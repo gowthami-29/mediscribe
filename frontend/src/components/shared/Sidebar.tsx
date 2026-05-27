@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import {
   LayoutDashboard, Users, Stethoscope, BrainCircuit,
-  FileText, BarChart3, ShieldCheck, Settings, LogOut, Mic, Image
+  FileText, BarChart3, ShieldCheck, Settings, LogOut, Mic, Image, Code
 } from 'lucide-react'
 import Logo from './Logo'
 
@@ -39,6 +39,7 @@ const NAV_GROUPS = [
     label: 'Account',
     items: [
       { to: '/app/settings', icon: Settings, label: 'Settings', color: '#6b7280' },
+      { to: '/app/developer', icon: Code, label: 'Developer APIs', color: '#7c3aed' },
     ],
   },
 ]

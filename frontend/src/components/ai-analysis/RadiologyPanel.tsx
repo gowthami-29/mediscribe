@@ -4,8 +4,8 @@ import { patientsApi } from '@/api/patients'
 import { radiologyApi, RadiologyResponse, SimilarReport } from '@/api/radiology'
 import { 
   UploadCloud, Loader2, 
-  AlertTriangle, History, Search, BookOpen, User, 
-  Sparkles, RefreshCw, ShieldAlert, CheckCircle
+  AlertTriangle, History, Search, BookOpen, User,
+  Sparkles, RefreshCw, ShieldAlert, CheckCircle, Activity
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRadiologyStore } from '@/store/radiologyStore'
@@ -369,6 +369,23 @@ export default function RadiologyPanel() {
             </div>
           </div>
 
+          {/* Critical Flags */}
+          {report.critical_flags && report.critical_flags.length > 0 && (
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', borderRadius: 10, padding: 12, border: '1px solid rgba(239, 68, 68, 0.3)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <AlertTriangle size={16} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', marginBottom: 2, textTransform: 'uppercase' }}>CRITICAL FINDING DETECTED</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                  {report.critical_flags.map((flag, idx) => (
+                    <span key={idx} style={{ background: '#ef4444', color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+                      {flag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Indication & Technique */}
           {(report.indication !== undefined || report.technique !== undefined) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -462,6 +479,43 @@ export default function RadiologyPanel() {
               </div>
             </div>
           )}
+
+          {/* Clinical Codes */}
+          {(report.snomed_codes && report.snomed_codes.length > 0) || (report.loinc_codes && report.loinc_codes.length > 0) ? (
+            <div style={{ background: 'rgba(124, 58, 237, 0.05)', borderRadius: 10, padding: 14, border: '1px solid rgba(124, 58, 237, 0.15)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Activity size={12} /> Clinical Codes (Azure Health Insights)
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {report.snomed_codes && report.snomed_codes.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginBottom: 4 }}>SNOMED CT</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {report.snomed_codes.map((code, idx) => (
+                        <span key={idx} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: 4, fontSize: 11, color: 'var(--text-1)' }}>
+                          <strong>{code.code}</strong>: {code.term}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {report.loinc_codes && report.loinc_codes.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginBottom: 4 }}>LOINC</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {report.loinc_codes.map((code, idx) => (
+                        <span key={idx} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: 4, fontSize: 11, color: 'var(--text-1)' }}>
+                          <strong>{code.code}</strong>: {code.term}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
 
           {/* Comparisons */}
           {report.comparison && (

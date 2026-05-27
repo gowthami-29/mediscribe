@@ -13,6 +13,45 @@ from sqlalchemy.sql import func
 from app.db.base import Base
 
 
+class ReportVersion(Base):
+    __tablename__ = "report_versions"
+
+    version_id = Column(
+        String,
+        primary_key=True,
+        default=lambda: str(uuid.uuid4())
+    )
+
+    report_id = Column(
+        String,
+        ForeignKey("reports.report_id"),
+        nullable=False
+    )
+
+    version_number = Column(
+        Integer,
+        nullable=False,
+        default=1
+    )
+
+    subjective = Column(Text, nullable=True)
+    objective = Column(Text, nullable=True)
+    assessment = Column(Text, nullable=True)
+    plan = Column(Text, nullable=True)
+    medications = Column(JSON, nullable=True)
+    key_entities = Column(JSON, nullable=True)
+
+    modified_by = Column(
+        String,
+        ForeignKey("users.user_id"),
+        nullable=True
+    )
+
+    modified_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+
 class Report(Base):
     __tablename__ = "reports"
 
@@ -45,6 +84,12 @@ class Report(Base):
     organization_id = Column(
         String,
         ForeignKey("organizations.organization_id"),
+        nullable=False
+    )
+
+    version = Column(
+        Integer,
+        default=1,
         nullable=False
     )
 

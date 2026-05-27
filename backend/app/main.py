@@ -122,6 +122,13 @@ def on_startup():
             logger.info("Migrating: adding patient_id column to analysis_records...")
             conn.execute(text("ALTER TABLE analysis_records ADD COLUMN patient_id VARCHAR REFERENCES patients(patient_id)"))
             logger.info("Migration complete: patient_id added to analysis_records.")
+            
+        # Add version to reports if missing
+        report_cols = [c["name"] for c in inspector.get_columns("reports")]
+        if "version" not in report_cols:
+            logger.info("Migrating: adding version column to reports...")
+            conn.execute(text("ALTER TABLE reports ADD COLUMN version INTEGER DEFAULT 1 NOT NULL"))
+            logger.info("Migration complete: version added to reports.")
     # -------------------------------------------------------------------
 
 api_v1 = APIRouter(prefix="/api/v1")
