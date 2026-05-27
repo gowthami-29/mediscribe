@@ -40,6 +40,12 @@ const NAV_GROUPS = [
     items: [
       { to: '/app/settings', icon: Settings, label: 'Settings', color: '#6b7280' },
       { to: '/app/developer', icon: Code, label: 'Developer APIs', color: '#7c3aed' },
+      {
+  to: '/app/api-keys',
+  icon: Code,
+  label: 'API Keys',
+  color: '#7c3aed'
+},
     ],
   },
 ]

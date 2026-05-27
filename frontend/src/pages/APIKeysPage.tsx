@@ -46,12 +46,23 @@ export default function APIKeysPage() {
           API Keys
         </h1>
 
-        <button
-          onClick={handleGenerate}
-          className="bg-indigo-600 text-white px-4 py-2 rounded"
-        >
-          Generate Key
-        </button>
+        <div className="flex gap-2">
+
+  <button
+    onClick={handleGenerate}
+    className="bg-indigo-600 text-white px-4 py-2 rounded"
+  >
+    Generate Key
+  </button>
+
+  <button
+    onClick={loadKeys}
+    className="bg-slate-600 text-white px-4 py-2 rounded"
+  >
+    Refresh
+  </button>
+
+</div>
       </div>
 
       <div className="space-y-4">
@@ -75,7 +86,11 @@ export default function APIKeysPage() {
               Requests:
               {key.request_count || 0}
             </div>
-
+            <div className="text-xs text-slate-500 mt-1">
+  Last Used:
+  {' '}
+  {key.last_used_at || 'Never'}
+</div>
             <button
               onClick={() =>
                 handleRevoke(key.api_key_id)
