@@ -59,47 +59,42 @@ export interface SimilarReportsResponse {
 
 export const radiologyApi = {
 
-  analyzeXray: (
+ analyzeXray: (
 
-    patientId: string,
+  patientId: string,
 
-    file: File,
+  file: File
 
-    apiKey: string
+) => {
 
-  ) => {
+  const formData = new FormData()
 
-    const formData = new FormData()
+  formData.append(
+    'file',
+    file
+  )
 
-    formData.append(
-      'file',
-      file
-    )
+  return apiClient.post<RadiologyResponse>(
 
-    return apiClient.post<RadiologyResponse>(
+    `/radiology/analyze-xray`,
 
-      `/radiology/analyze-xray`,
+    formData,
 
-      formData,
+    {
 
-      {
+      params: {
+        patient_id: patientId
+      },
 
-        params: {
-          patient_id: patientId
-        },
+      headers: {
 
-        headers: {
+        'Content-Type':
+          'multipart/form-data'
+      },
+    }
 
-          'Content-Type':
-            'multipart/form-data',
-
-          'x-api-key':
-            apiKey
-        },
-      }
-
-    ).then((r) => r.data)
-  },
+  ).then((r) => r.data)
+},
 
   getSimilarReports: (
     query: string
