@@ -334,6 +334,9 @@ class ConsultationService:
             for report in reports:
                 db.delete(report)
 
+            # Flush the report deletions so they are removed from DB before deleting the parent consultation
+            db.flush()
+
             db.delete(consultation)
 
             db.commit()
