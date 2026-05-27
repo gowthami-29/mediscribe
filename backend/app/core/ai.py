@@ -300,13 +300,35 @@ def generate_soap_from_image(image_path: str, context: str = "", population_cont
             encoded = base64.b64encode(image_file.read()).decode("utf-8")
 
         prompt = (
-            "Read this medical image or scanned report and generate a SOAP note. "
-            "If the image is an X-ray or radiology image, summarize visible/reportable findings carefully "
-            "and avoid inventing patient history. Return only JSON with keys: subjective, objective, "
-            "assessment, plan, medications, follow_up_needed, follow_up_days."
+            
+                "Read this medical image or scanned report and generate a SOAP note. "
+                "If the image is an X-ray or radiology image, summarize visible/reportable findings carefully. "
+
+                "IMPORTANT: If historical clinical context is provided, you MUST incorporate relevant prior "
+                "medical history, previous imaging findings, allergies, prior diagnoses, and historical "
+                "clinical information into the SOAP note. "
+
+                "Do NOT ignore provided historical context. "
+                "Only avoid inventing history that is NOT present in the supplied context. "
+
+                "Return only JSON with keys: subjective, objective, assessment, plan, medications, "
+                "follow_up_needed, follow_up_days."
+
         )
         if context:
             prompt = f"{prompt}\n\nAdditional context: {context}"
+
+        if historical_context:
+            prompt += f"""
+
+            PATIENT HISTORICAL RECORDS:{historical_context}
+
+            IMPORTANT:
+            Use the patient historical records above while generating the SOAP note.
+            Do NOT say "No historical medical records found" if history exists.
+            Mention previous injuries, diagnoses, or prior imaging findings when relevant.
+
+            """
         
         if population_context:
             prompt = f"{prompt}\n\n--- [POPULATION CONTEXT] (Matches found across database) ---\n{population_context}"
