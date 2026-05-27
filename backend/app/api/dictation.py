@@ -179,6 +179,7 @@ async def generate_pdf_from_report(
 @router.post("/save")
 async def save_dictation(
     report_data: str = Form(..., description="JSON string of the dictation report"),
+    report_id: Optional[str] = Form(None, description="Optional ID of existing report to update"),
     letterhead: Optional[UploadFile] = File(None, description="Clinic letterhead image (PNG/JPG)"),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -188,6 +189,8 @@ async def save_dictation(
     """
     try:
         import json
+        from datetime import datetime
+        from app.models.report import ReportVersion
         report_dict = json.loads(report_data)
         
         letterhead_path = None
@@ -217,26 +220,69 @@ async def save_dictation(
             "notes": report_dict.get("notes", "")
         }
 
-        db_report = Report(
-            user_id=current_user.user_id,
-            organization_id=current_user.organization_id,
-            status="approved",
-            subjective=json.dumps(subjective_data),
-            objective=json.dumps(objective_data),
-            assessment=json.dumps(assessment_data),
-            plan=json.dumps(plan_data),
-            medications=report_dict.get("medications", []),
-            key_entities={
-                "source": "voice_dictation",
-                "letterhead_path": letterhead_path,
-                "original_dictation": report_dict
-            }
-        )
-        
+        key_entities = {
+            "source": "voice_dictation",
+            "original_dictation": report_dict
+        }
+        if letterhead_path:
+            key_entities["letterhead_path"] = letterhead_path
         if report_dict.get("patient_name"):
-            db_report.key_entities["patient_name"] = report_dict.get("patient_name")
+            key_entities["patient_name"] = report_dict.get("patient_name")
             
-        db.add(db_report)
+        db_report = None
+        if report_id:
+            db_report = db.query(Report).filter(
+                Report.report_id == report_id,
+                Report.organization_id == current_user.organization_id
+            ).first()
+            
+        if db_report:
+            # Create a version history record before updating
+            version_record = ReportVersion(
+                report_id=db_report.report_id,
+                version_number=db_report.version,
+                subjective=db_report.subjective,
+                objective=db_report.objective,
+                assessment=db_report.assessment,
+                plan=db_report.plan,
+                medications=db_report.medications,
+                key_entities=db_report.key_entities,
+                modified_by=current_user.user_id,
+            )
+            db.add(version_record)
+            
+            # Update existing report
+            db_report.subjective = json.dumps(subjective_data)
+            db_report.objective = json.dumps(objective_data)
+            db_report.assessment = json.dumps(assessment_data)
+            db_report.plan = json.dumps(plan_data)
+            db_report.medications = report_dict.get("medications", [])
+            # Only update letterhead if a new one was provided, otherwise keep existing
+            if letterhead_path:
+                db_report.key_entities = key_entities
+            else:
+                current_entities = dict(db_report.key_entities) if db_report.key_entities else {}
+                current_entities.update(key_entities)
+                # Keep existing letterhead if present
+                db_report.key_entities = current_entities
+                
+            db_report.version += 1
+            db_report.updated_at = datetime.utcnow()
+        else:
+            # Create new report
+            db_report = Report(
+                user_id=current_user.user_id,
+                organization_id=current_user.organization_id,
+                status="approved",
+                subjective=json.dumps(subjective_data),
+                objective=json.dumps(objective_data),
+                assessment=json.dumps(assessment_data),
+                plan=json.dumps(plan_data),
+                medications=report_dict.get("medications", []),
+                key_entities=key_entities
+            )
+            db.add(db_report)
+            
         db.commit()
         db.refresh(db_report)
         

@@ -6,7 +6,8 @@ import React, {
 import {
   Clock,
   AlertTriangle,
-  ArrowLeft
+  ArrowLeft,
+  Activity
 } from 'lucide-react'
 
 import { apiClient, API_BASE_URL } from '@/api/client'
@@ -326,6 +327,37 @@ export const ComparisonSplitView: React.FC<
                 </p>
 
               </div>
+
+              {((selectedHistoricalScan.snomed_codes && selectedHistoricalScan.snomed_codes.length > 0) || 
+                (selectedHistoricalScan.loinc_codes && selectedHistoricalScan.loinc_codes.length > 0)) && (
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-2">
+                    <Activity size={12} /> Clinical Codes
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {selectedHistoricalScan.snomed_codes?.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-[10px] text-slate-400 font-semibold mr-1 mt-1">SNOMED:</span>
+                        {selectedHistoricalScan.snomed_codes.map((c: any, i: number) => (
+                          <span key={i} className="text-[11px] bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700">
+                            {c.code}: {c.term}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {selectedHistoricalScan.loinc_codes?.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-[10px] text-slate-400 font-semibold mr-1 mt-1">LOINC:</span>
+                        {selectedHistoricalScan.loinc_codes.map((c: any, i: number) => (
+                          <span key={i} className="text-[11px] bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700">
+                            {c.code}: {c.term}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {selectedHistoricalScan.comparison && (
 

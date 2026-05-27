@@ -25,6 +25,7 @@ export default function DictationPage() {
     realtimeText, setRealtimeText,
     statusText, setStatusText,
     report, setReport,
+    currentReportId, setCurrentReportId,
     clearDictation
   } = useDictationStore()
 
@@ -503,7 +504,10 @@ export default function DictationPage() {
                     setSaveSuccess(false)
                     setErrorMsg('')
                     try {
-                      await dictationApi.save(report, letterhead)
+                      const res = await dictationApi.save(report, letterhead, currentReportId)
+                      if (res.report_id) {
+                        setCurrentReportId(res.report_id)
+                      }
                       setSaveSuccess(true)
                       setTimeout(() => setSaveSuccess(false), 3000)
                     } catch (err: any) {

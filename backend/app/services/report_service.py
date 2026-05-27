@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
-from app.models.report import Report
+from app.models.report import Report, ReportVersion
 from app.schemas.report import SoapReportCreate, SoapReportUpdate
 from app.services.rag_service import RagService
 
@@ -39,9 +39,23 @@ class ReportService:
         if not report:
             return None
 
+        # Create version history record
+        version_record = ReportVersion(
+            report_id=report.report_id,
+            version_number=report.version,
+            subjective=report.subjective,
+            objective=report.objective,
+            assessment=report.assessment,
+            plan=report.plan,
+            medications=report.medications,
+            key_entities=report.key_entities,
+        )
+        db.add(version_record)
+
         for key, value in data.dict(exclude_unset=True).items():
             setattr(report, key, value)
 
+        report.version += 1
         report.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(report)

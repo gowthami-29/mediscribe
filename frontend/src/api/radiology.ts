@@ -13,6 +13,9 @@ export interface RadiologyResponse {
     abnormalities: string[]
     comparison: string
     status: string
+    snomed_codes?: Array<{ code: string, term: string }>
+    loinc_codes?: Array<{ code: string, term: string }>
+    critical_flags?: string[]
   }
 }
 
