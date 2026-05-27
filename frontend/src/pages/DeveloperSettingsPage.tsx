@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Key, Plus, Copy, Check, Trash2, Code, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
+import { Key, Plus, Copy, Check, Trash2, Code } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface APIKey {
