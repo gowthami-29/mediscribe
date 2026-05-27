@@ -1,17 +1,35 @@
+from app.models.notification import Notification
+
+
 class NotificationService:
-    @staticmethod
-    def send_email(to_email: str, subject: str, body: str):
-        print("\n" + "="*50)
-        print(f"📧 EMAIL SENT TO: {to_email}")
-        print(f"Subject: {subject}")
-        print(f"Body: {body}")
-        print("="*50 + "\n")
-        return True
 
     @staticmethod
-    def send_sms(to_phone: str, message: str):
-        print("\n" + "="*50)
-        print(f"📱 SMS SENT TO: {to_phone}")
-        print(f"Message: {message}")
-        print("="*50 + "\n")
-        return True
+    def create_notification(
+
+        db,
+
+        user_id,
+
+        title,
+
+        message,
+
+        type="info"
+    ):
+
+        notification = Notification(
+
+            user_id=user_id,
+
+            title=title,
+
+            message=message,
+
+            type=type
+        )
+
+        db.add(notification)
+
+        db.commit()
+
+        return notification

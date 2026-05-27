@@ -3,7 +3,9 @@ from fastapi import HTTPException
 from datetime import datetime
 from typing import List, Optional
 import uuid
+from app.services.audit_service import audit_service
 import os
+from app.services.notification_service import NotificationService
 from app.models.analysis import Analysis
 from app.schemas.analysis import AIAnalysisCreate
 from app.core.ai import generate_soap_from_image
@@ -186,8 +188,32 @@ class AnalysisService:
             db.add(new_record)
             db.commit()
             db.refresh(new_record)
+            audit_service.log_event(
 
-            # --- RAG Integration: Index the extracted text ---
+                db=db,
+
+                action="UPLOAD_ANALYSIS",
+
+                user_id=user_id,
+
+                organization_id=organization_id,
+
+                resource_type="Analysis",
+
+                resource_id=new_record.analysis_id,
+
+                details={
+
+                    "file_name": file.filename,
+
+                    "file_type": file_type,
+
+                    "patient_id": patient_id
+                },
+
+                status="success"
+            )
+                        # --- RAG Integration: Index the extracted text ---
             if extracted_text and new_record.patient_id:
                 try:
                     RagService.index_document(
@@ -446,7 +472,7 @@ class AnalysisService:
 
             record.confidence_score = 94.2
             
-            # 2. Intelligent Comparison (Phase 5)
+            # 2. Intelligent Comparison (Phase 5
             if record.patient_id:
                 print(f"DEBUG: Checking for previous reports for patient {record.patient_id}...")
                 latest_report = db.query(Report).filter(
@@ -464,7 +490,23 @@ class AnalysisService:
                     }
                     record.comparison_data = compare_medical_reports(existing_data, soap_data)
             
-            record.analysis_status = "completed"
+            record.analysis_status = "review_pending"
+            NotificationService.create_notification(
+
+            db=db,
+
+            user_id=record.user_id,
+
+            title="AI Report Ready",
+
+            message=(
+                f"Analysis {record.analysis_id} "
+                "is ready for review."
+            ),
+
+            type="review_pending"
+        )
+            
             print("DEBUG: Saving report draft...")
             AnalysisService._upsert_report_from_analysis(db, record, status="draft")
         except Exception as e:
@@ -472,6 +514,7 @@ class AnalysisService:
             import traceback
             traceback.print_exc()
             record.analysis_status = "failed"
+            
             try:
                 db.rollback()
             except Exception:
@@ -480,6 +523,56 @@ class AnalysisService:
         try:
             db.commit()
             db.refresh(record)
+            if record.analysis_status == "review_pending":
+
+                audit_service.log_event(
+
+                    db=db,
+
+                    action="AI_ANALYSIS_COMPLETED",
+
+                    user_id=record.user_id,
+
+                    organization_id=record.organization_id,
+
+                    resource_type="Analysis",
+
+                    resource_id=record.analysis_id,
+
+                    details={
+
+                        "patient_id": record.patient_id,
+
+                        "confidence_score": str(
+                            record.confidence_score
+                        )
+                    },
+
+                    status="success"
+                )
+
+            elif record.analysis_status == "failed":
+
+                audit_service.log_event(
+
+                    db=db,
+
+                    action="AI_ANALYSIS_FAILED",
+
+                    user_id=record.user_id,
+
+                    organization_id=record.organization_id,
+
+                    resource_type="Analysis",
+
+                    resource_id=record.analysis_id,
+
+                    details={
+                        "error": "AI processing failed"
+                    },
+
+                    status="failure"
+                )
         except Exception as commit_err:
             print(f"FINAL COMMIT ERROR: {commit_err}")
             db.rollback()
@@ -499,9 +592,59 @@ class AnalysisService:
         # 1. Update analysis record
         record.approved_at = datetime.utcnow()
         record.notes = notes
-        record.analysis_status = "completed"
+        record.analysis_status = "approved"
         
         AnalysisService._upsert_report_from_analysis(db, record, status="approved")
         db.commit()
         db.refresh(record)
         return record
+    
+@staticmethod
+def reject_analysis(
+
+    db: Session,
+
+    analysis_id: str,
+
+    organization_id: str,
+
+    notes: str
+):
+
+    record = db.query(Analysis).filter(
+
+        Analysis.analysis_id == analysis_id,
+
+        Analysis.organization_id == organization_id
+
+    ).first()
+
+    if not record:
+
+        return None
+
+    record.analysis_status = "rejected"
+
+    record.review_notes = notes
+
+    db.commit()
+
+    db.refresh(record)
+    NotificationService.create_notification(
+
+    db=db,
+
+    user_id=record.user_id,
+
+    title="Report Rejected",
+
+    message=(
+        f"Analysis {record.analysis_id} "
+        "requires corrections."
+    ),
+
+    type="rejected"
+)
+
+    return record
+

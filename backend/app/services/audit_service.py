@@ -15,18 +15,43 @@ class AuditService:
         ip_address: Optional[str] = None,
         status: str = "success"
     ):
-        log = AuditLog(
-            user_id=user_id,
-            organization_id=organization_id,
-            action=action,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            details=details,
-            ip_address=ip_address,
-            status=status
-        )
-        db.add(log)
-        db.commit()
-        return log
+        try:
+
+            log = AuditLog(
+
+                user_id=user_id,
+
+                organization_id=organization_id,
+
+                action=action,
+
+                resource_type=resource_type,
+
+                resource_id=resource_id,
+
+                details=details,
+
+                ip_address=ip_address,
+
+                status=status
+            )
+
+            db.add(log)
+
+            db.commit()
+
+            return log
+
+        except Exception as e:
+
+            print(
+                "AUDIT LOG ERROR:",
+                str(e)
+            )
+
+            db.rollback()
+
+            return None
+        
 
 audit_service = AuditService()

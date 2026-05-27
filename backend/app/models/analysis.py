@@ -153,3 +153,12 @@ class Analysis(Base):
         DateTime(timezone=True),
         onupdate=func.now()
     )
+    review_notes = Column(
+    Text,
+    nullable=True
+    )
+
+    review_status = Column(
+        String,
+        nullable=True
+    )
