@@ -172,16 +172,23 @@ export default function RadiologyPanel() {
     )
 
     toast.error(
-      err.response?.data?.detail ||
-      'Analysis failed. Check backend console.'
-    )
 
-  } finally {
+    typeof err?.response?.data?.detail === 'string'
 
-    setLoading(false)
+      ? err.response.data.detail
 
-    setStatusText('')
-  }
+      : 'Radiology analysis failed'
+
+  )
+
+} finally {
+
+  setLoading(false)
+
+  setStatusText('')
+}
+
+ 
 }
 
   // Search similar reports with pgvector

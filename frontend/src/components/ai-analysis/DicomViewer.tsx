@@ -131,7 +131,7 @@ export const DicomViewer: React.FC<DicomViewerProps> = ({ file, imageUrl, metada
     img.onerror = () => { setLoadError(true); setIsLoaded(true) }
     img.src = src
 
-    return () => { if (file) URL.revokeObjectURL(src) }
+    return () => {  }
   }, [file, imageUrl, isRegularImage, drawCanvas])
 
   // Redraw whenever view changes

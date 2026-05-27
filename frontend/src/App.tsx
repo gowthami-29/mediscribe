@@ -4,6 +4,7 @@ import AppLayout from '@/components/shared/AppLayout'
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import APIKeysPage from '@/pages/APIKeysPage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="audit" element={<AuditPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="developer" element={<DeveloperSettingsPage />} />
+        <Route path="api-keys" element={<APIKeysPage />} />
       </Route>
 
       {/* Legacy redirects — keep old /dashboard etc. working */}
@@ -75,6 +77,16 @@ export default function App() {
       <Route path="/audit" element={<Navigate to="/app/audit" replace />} />
       <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
       <Route path="/developer" element={<Navigate to="/app/developer" replace />} />
+      <Route
+  path="/api-keys"
+  element={
+    <Navigate
+      to="/app/api-keys"
+      replace
+    />
+  }
+/>
+      
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
