@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from datetime import datetime
 from typing import List, Optional
 import uuid
+from app.models.report import Report
 from app.services.audit_service import audit_service
 import os
 from app.services.notification_service import NotificationService
@@ -68,7 +69,7 @@ class AnalysisService:
 
     @staticmethod
     def _upsert_report_from_analysis(db: Session, record: Analysis, status: str = "draft"):
-        from app.models.report import Report
+        
 
         report = AnalysisService._find_analysis_report(
             db, record.analysis_id, record.organization_id
@@ -84,6 +85,7 @@ class AnalysisService:
         report.objective = AnalysisService._stringify_soap_value(record.generated_objective)
         report.assessment = AnalysisService._stringify_soap_value(record.generated_assessment)
         report.plan = AnalysisService._stringify_soap_value(record.generated_plan)
+        report.structured_findings = (record.structured_findings)
         report.medications = record.generated_medications or []
         report.key_entities = {
             **(record.key_entities if isinstance(record.key_entities, dict) else {}),
@@ -399,6 +401,12 @@ class AnalysisService:
             record.generated_objective = soap_data.get("objective")
             record.generated_assessment = soap_data.get("assessment")
             record.generated_plan = soap_data.get("plan")
+            record.structured_findings = (
+                    soap_data.get(
+                        "structured_findings",
+                        []
+                    )
+                )
             # Ensure medications is a list of dicts
             raw_meds = soap_data.get("medications", [])
             sanitized_meds = []

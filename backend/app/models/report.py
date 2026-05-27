@@ -166,3 +166,7 @@ class Report(Base):
         DateTime(timezone=True),
         onupdate=func.now()
     )
+    structured_findings = Column(
+    JSON,
+    nullable=True
+)

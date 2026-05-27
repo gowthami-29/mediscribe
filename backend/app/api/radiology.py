@@ -5,7 +5,7 @@ from app.core.deps import get_current_user
 from uuid import UUID
 from fastapi.responses import Response
 from pydantic import BaseModel
-
+from app.core.api_key_auth import validate_api_key
 from app.services.radiology_service import (
     analyze_xray_image,
     generate_embedding
@@ -34,7 +34,8 @@ router = APIRouter()
 @router.post("/analyze-xray")
 async def analyze_xray(
     patient_id: UUID,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    api_key = Depends(validate_api_key)
 ):
 
     db: Session = SessionLocal()
