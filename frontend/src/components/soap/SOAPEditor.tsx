@@ -142,10 +142,15 @@ export default function SOAPEditor({ consultationId }: Props) {
     },
     onSuccess: (blob: any, format: string) => {
       if (blob) {
+        let prefix = 'SOAP_Report'
+        const data = reportData as any
+        if (data?.key_entities?.analysis_id) prefix = 'Clinical_RAG_Report'
+        else if (data?.key_entities?.source === 'voice_dictation') prefix = 'Dictation_Report'
+
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `SOAP_Report_${(reportId || consultationId).slice(0, 8)}.${format}`
+        a.download = `${prefix}_${(reportId || consultationId).slice(0, 8)}.${format}`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)

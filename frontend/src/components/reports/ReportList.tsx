@@ -68,15 +68,20 @@ export default function ReportList({ search = '', filterType = 'all' }: Props) {
     : allReports
 
 
-  const handleExport = async (reportId: string, fmt: 'pdf' | 'docx') => {
+  const handleExport = async (report: any, fmt: 'pdf' | 'docx') => {
     try {
+      const reportId = report.report_id
       const blob = await reportsApi.export(reportId, { format: fmt })
       if (!blob) throw new Error('Empty file received')
+
+      let prefix = 'SOAP_Report'
+      if (report.key_entities?.analysis_id) prefix = 'Clinical_RAG_Report'
+      else if (report.key_entities?.source === 'voice_dictation') prefix = 'Dictation_Report'
 
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `SOAP_Report_${reportId.slice(0, 8)}.${fmt}`
+      a.download = `${prefix}_${reportId.slice(0, 8)}.${fmt}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
