@@ -201,7 +201,7 @@ export default function ReportList({ search = '', filterType = 'all' }: Props) {
                           </div>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-1)' }}>
-                              {filterType === 'dictation' ? 'Dictation Report' : 'SOAP Report'}
+                              {r.key_entities?.analysis_id ? 'Clinical RAG Report' : (r.key_entities?.source === 'voice_dictation' ? 'Dictation Report' : 'SOAP Report')}
                             </div>
                             <code style={{ fontSize: 11, color: 'var(--text-3)' }}>
                               #{r.report_id?.slice(0, 8)}…
