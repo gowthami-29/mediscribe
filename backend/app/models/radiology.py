@@ -1,21 +1,32 @@
-from sqlalchemy import Column, Text, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Text, DateTime, String
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy import String
 from datetime import datetime
 from app.db.base import Base
-from pgvector.sqlalchemy import Vector
 import uuid
+
+try:
+    from pgvector.sqlalchemy import Vector as PGVector  # type: ignore
+    _VECTOR_TYPE = PGVector(1536)
+except ImportError:
+    # pgvector not installed (e.g. SQLite dev environment) — store as Text
+    from sqlalchemy import Text as _TextType
+    _VECTOR_TYPE = _TextType()
+
+# Use String for UUID compatibility across SQLite and PostgreSQL
+_UUID_COL = String
 
 
 class RadiologyReport(Base):
     __tablename__ = "radiology_reports"
 
     id = Column(
-        UUID(as_uuid=True),
+        String,
         primary_key=True,
-        default=uuid.uuid4
+        default=lambda: str(uuid.uuid4())
     )
 
-    patient_id = Column(UUID(as_uuid=True))
+    patient_id = Column(String)
 
     modality = Column(Text)
 
@@ -43,7 +54,7 @@ class RadiologyReport(Base):
 
     status = Column(Text, default="DRAFT")
 
-    embedding = Column(Vector(1536))
+    embedding = Column(Text, nullable=True)  # pgvector Vector(1536) on PostgreSQL
 
     created_at = Column(
         DateTime,

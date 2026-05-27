@@ -200,6 +200,28 @@ class AnalysisService:
                 except Exception as index_err:
                     print(f"RAG Indexing Error: {index_err}")
                     db.rollback()
+
+            # --- RAG Integration: Index patient profile data if not yet indexed ---
+            if new_record.patient_id:
+                try:
+                    from app.models.document_embedding import DocumentEmbedding
+                    existing_profile = db.query(DocumentEmbedding).filter(
+                        DocumentEmbedding.patient_id == new_record.patient_id,
+                        DocumentEmbedding.source_type == "patient_profile"
+                    ).first()
+                    if not existing_profile:
+                        profile_text = AnalysisService._get_patient_profile_context(db, new_record.patient_id)
+                        if profile_text and profile_text.strip():
+                            RagService.index_document(
+                                db,
+                                patient_id=new_record.patient_id,
+                                source_id=new_record.patient_id,
+                                source_type="patient_profile",
+                                content=profile_text,
+                            )
+                            print("Patient profile indexed into RAG.")
+                except Exception as profile_index_err:
+                    print(f"Patient Profile RAG Indexing Error: {profile_index_err}")
             # ------------------------------------------------
 
             return new_record
@@ -207,6 +229,44 @@ class AnalysisService:
             print(f"UPLOAD ERROR: {str(e)}")
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    @staticmethod
+    def _get_patient_profile_context(db: Session, patient_id: str) -> str:
+        """
+        Fetch the patient's profile data (allergies, medical history, medications)
+        directly from the patients table and format it as context for the AI prompt.
+        This is the primary source of patient history — independent of RAG embeddings.
+        """
+        from app.models.patient import Patient
+        patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
+        if not patient:
+            return ""
+
+        parts = []
+        name = f"{patient.first_name} {patient.last_name}".strip()
+        if name:
+            parts.append(f"Patient Name: {name}")
+        if patient.date_of_birth:
+            parts.append(f"Date of Birth: {patient.date_of_birth}")
+        if patient.gender:
+            parts.append(f"Gender: {patient.gender}")
+        if patient.blood_type:
+            parts.append(f"Blood Type: {patient.blood_type}")
+        if patient.allergies and patient.allergies.strip():
+            parts.append(f"Allergies: {patient.allergies.strip()}")
+        else:
+            parts.append("Allergies: None on record")
+        if patient.medical_history and patient.medical_history.strip():
+            parts.append(f"Past Medical History: {patient.medical_history.strip()}")
+        else:
+            parts.append("Past Medical History: None on record")
+        if patient.current_medications and patient.current_medications.strip():
+            parts.append(f"Current Medications: {patient.current_medications.strip()}")
+
+        if not parts:
+            return ""
+
+        return "PATIENT PROFILE:\n" + "\n".join(parts)
 
     @staticmethod
     def analyze_document(db: Session, analysis_id: str, organization_id: str):
@@ -221,50 +281,53 @@ class AnalysisService:
         record.analysis_status = "analyzing"
         db.commit()
         
-        # 0. RAG: Retrieve historical context for this patient
-        historical_context = ""
+        # 0a. Always inject patient profile data (allergies, medical history) directly
+        patient_profile_context = ""
         if record.patient_id:
             try:
+                patient_profile_context = AnalysisService._get_patient_profile_context(
+                    db, record.patient_id
+                )
+                print("PATIENT PROFILE CONTEXT:", patient_profile_context[:200] if patient_profile_context else "None")
+            except Exception as profile_err:
+                print(f"Patient Profile Fetch Error: {profile_err}")
 
+        # 0b. RAG: Retrieve historical context from previous analyses/documents
+        rag_context = ""
+        if record.patient_id:
+            try:
+                # For images: use a meaningful medical query instead of empty fields
                 if record.source_file_type == "image":
-
-                    query_for_rag = f"""
-                    {record.source_file_name}
-
-                    {record.generated_objective or ""}
-
-                    {record.generated_assessment or ""}
-                    """
-
+                    query_for_rag = (
+                        f"medical imaging radiology chest x-ray findings history {record.source_file_name}"
+                    )
                 else:
-
                     query_for_rag = (
                         record.extracted_text
                         or record.source_file_name
                         or "medical document"
                     )
 
-                historical_context = RagService.get_augmented_context(
-
+                rag_context = RagService.get_augmented_context(
                     db,
-
                     patient_id=record.patient_id,
-
-                    query_text=query_for_rag
+                    query_text=query_for_rag,
                 )
 
-                print(
-                    "RAG QUERY:",
-                    query_for_rag
-                )
-
-                print(
-                    "RAG CONTEXT:",
-                    historical_context
-                )
+                print("RAG QUERY:", query_for_rag[:100])
+                print("RAG CONTEXT:", rag_context[:200] if rag_context else "None")
 
             except Exception as rag_err:
                 print(f"RAG Retrieval Error: {rag_err}")
+
+        # Combine patient profile + RAG history into one historical_context block
+        historical_context_parts = []
+        if patient_profile_context:
+            historical_context_parts.append(patient_profile_context)
+        if rag_context:
+            historical_context_parts.append("PREVIOUS CLINICAL RECORDS (from RAG):\n" + rag_context)
+
+        historical_context = "\n\n".join(historical_context_parts)
 
         # 1. Generate SOAP from document
         import json
@@ -374,11 +437,12 @@ class AnalysisService:
                 )
 
             except Exception as rag_index_err:
-
-                print(
-                    "SOAP RAG INDEX ERROR:",
-                    str(rag_index_err)
-                )
+                print("SOAP RAG INDEX ERROR:", str(rag_index_err))
+                # Roll back the failed RAG insert so the session is usable again
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
 
             record.confidence_score = 94.2
             
@@ -408,9 +472,17 @@ class AnalysisService:
             import traceback
             traceback.print_exc()
             record.analysis_status = "failed"
+            try:
+                db.rollback()
+            except Exception:
+                pass
             
-        db.commit()
-        db.refresh(record)
+        try:
+            db.commit()
+            db.refresh(record)
+        except Exception as commit_err:
+            print(f"FINAL COMMIT ERROR: {commit_err}")
+            db.rollback()
         print(f"DEBUG: Analysis for {analysis_id} finished with status {record.analysis_status}")
         return record
 
