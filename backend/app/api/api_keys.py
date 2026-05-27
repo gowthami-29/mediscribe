@@ -49,10 +49,12 @@ def get_api_keys(
 
     keys = db.query(APIKey).filter(
 
-        APIKey.organization_id
-        == current_user.organization_id
+    APIKey.organization_id
+    == current_user.organization_id,
 
-    ).all()
+    APIKey.is_active == True
+
+).all()
 
     return keys
 

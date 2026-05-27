@@ -93,6 +93,7 @@ from app.api.speech import router as speech_router
 from app.api.radiology import router as radiology_router
 from app.api.dictation import router as dictation_router
 from app.api.api_keys import router as api_keys
+from app.api.external_radiology import router as external_radiology_router
 # Create all database tables (Note: In production with migrations, this might be handled by Alembic)
 @app.on_event("startup")
 def on_startup():
@@ -144,6 +145,7 @@ api_v1.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 api_v1.include_router(audit_router, prefix="/audit", tags=["Audit Logs"])
 api_v1.include_router(radiology_router,prefix="/radiology",tags=["Radiology"])
 api_v1.include_router(api_keys,prefix="/api-keys",tags=["API Keys"])
+api_v1.include_router(external_radiology_router,prefix="/external/radiology",tags=["External Radiology"])
 app.include_router(api_v1)
 
 @app.get("/")
