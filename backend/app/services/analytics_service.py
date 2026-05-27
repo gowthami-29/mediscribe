@@ -7,7 +7,11 @@ from app.models.report import Report
 
 class AnalyticsService:
     @staticmethod
-    def get_dashboard_stats(db: Session, organization_id: str):
+    def get_dashboard_stats(
+    db: Session,
+    organization_id: str,
+    period: str = "30d"
+):
         # Total Patients
         total_patients = db.query(Patient).filter(
             Patient.organization_id == organization_id,
@@ -50,12 +54,25 @@ class AnalyticsService:
             "monthly_consultations": monthly_consultations,
             "pending_reports": pending_reports,
             "reports_exported": reports_exported,
-            "avg_duration_minutes": round(float(avg_duration), 1),
+            "avg_duration_minutes": round(float(avg_duration or 0), 1),
             "time_saved_hours": round(total_consultations * 0.25, 1) # Estimated 15 mins saved per consultation
         }
 
     @staticmethod
-    def get_consultation_trends(db: Session, organization_id: str, days: int = 30):
+    def get_consultation_trends(
+    db: Session,
+    organization_id: str,
+    period: str = "30d"
+):
+        try:
+
+            days = int(
+                period.replace("d", "")
+            )
+
+        except:
+
+            days = 30
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days)
         
