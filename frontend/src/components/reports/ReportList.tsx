@@ -241,7 +241,7 @@ export default function ReportList({ search = '', filterType = 'all' }: Props) {
                         <div style={{ display: 'flex', gap: 7, justifyContent: 'flex-end' }}>
                           {filterType === 'dictation' || r.key_entities?.source === 'voice_dictation' ? (
                             <button
-                              onClick={() => handleExport(r.report_id, 'pdf')}
+                              onClick={() => handleExport(r, 'pdf')}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
@@ -284,7 +284,7 @@ export default function ReportList({ search = '', filterType = 'all' }: Props) {
                           {(['pdf'] as const).map((fmt) => (
                             <button
                               key={fmt}
-                              onClick={() => handleExport(r.report_id, fmt)}
+                              onClick={() => handleExport(r, fmt)}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '5px 11px', borderRadius: 8, cursor: 'pointer',
