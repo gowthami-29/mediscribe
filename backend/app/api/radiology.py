@@ -35,7 +35,7 @@ router = APIRouter()
 async def analyze_xray(
     patient_id: UUID,
     file: UploadFile = File(...),
-    api_key = Depends(validate_api_key)
+    
 ):
 
     db: Session = SessionLocal()

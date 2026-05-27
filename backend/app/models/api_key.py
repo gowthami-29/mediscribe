@@ -12,7 +12,6 @@ from sqlalchemy.sql import func
 
 from app.db.base import Base
 
-
 class APIKey(Base):
 
     __tablename__ = "api_keys"
@@ -50,13 +49,12 @@ class APIKey(Base):
         server_default=func.now()
     )
 
+    request_count = Column(
+        Integer,
+        default=0
+    )
 
-request_count = Column(
-    Integer,
-    default=0
-)
-
-last_used_at = Column(
-    DateTime(timezone=True),
-    nullable=True
-)
+    last_used_at = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )

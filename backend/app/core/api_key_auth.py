@@ -33,10 +33,10 @@ def validate_api_key(
             detail="Invalid API key"
         )
 
-    #api_key.request_count += 1
+    api_key.request_count += 1
 
-    #api_key.last_used_at = datetime.utcnow()
+    api_key.last_used_at = datetime.utcnow()
 
-    #db.commit()
+    db.commit()
 
     return api_key
