@@ -39,7 +39,7 @@ const NAV_GROUPS = [
     label: 'Account',
     items: [
       { to: '/app/settings', icon: Settings, label: 'Settings', color: '#6b7280' },
-      { to: '/app/developer', icon: Code, label: 'Developer APIs', color: '#7c3aed' },
+      
       {
   to: '/app/api-keys',
   icon: Code,
