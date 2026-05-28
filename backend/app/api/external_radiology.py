@@ -19,6 +19,8 @@ from app.services.dicom_service import (
     dicom_to_png_bytes
 )
 
+from app.services.azure_health_insights_service import azure_health_insights_service
+from app.services.audit_service import audit_service
 from app.models.radiology import RadiologyReport
 
 router = APIRouter()
@@ -96,10 +98,16 @@ async def analyze_xray_external(
         report["findings"]
     )
 
+    # Phase 3: Layer 2 Azure Health Insights Extraction
+    health_insights = await azure_health_insights_service.extract_clinical_insights(
+        findings_text=report["findings"],
+        impression_text=report["impression"]
+    )
+
     # Save report
     db_report = RadiologyReport(
 
-        patient_id=patient_id,
+        patient_id=str(patient_id),
 
         image_url=image_key,
 
@@ -140,10 +148,16 @@ async def analyze_xray_external(
             "comparison",
             ""
         ),
+        
+        clinical_codes=health_insights["clinical_codes"],
+        
+        critical_findings=health_insights["critical_findings"],
+        
+        follow_up_recommendation=health_insights["follow_up_recommendation"],
 
         status="DRAFT",
 
-        embedding=embedding
+        embedding=str(embedding)
     )
 
     db.add(db_report)
@@ -156,26 +170,34 @@ async def analyze_xray_external(
         db_report.image_url
     )
 
-    db.close()
+    # Audit Logging for B2B Compliance
+    audit_service.log_event(
+        db=db,
+        action="external_api.analyze_xray",
+        user_id=None,
+        organization_id=api_key.organization_id,
+        resource_type="radiology_report",
+        resource_id=str(db_report.id),
+        details={"api_key_id": str(api_key.api_key_id), "patient_id": str(patient_id), "status": "DRAFT", "critical_findings": health_insights["critical_findings"]},
+        status="success"
+    )
 
-    return {
-
+    response_data = {
         "success": True,
-
         "patient_id": str(patient_id),
-
         "report_id": str(db_report.id),
-
-        "previous_reports_count": len(
-            previous_reports
-        ),
-
+        "previous_reports_count": len(previous_reports),
         "image_url": signed_image_url,
-
         "dicom_metadata": metadata,
-
         "report": {
             **report,
+            "clinical_codes": health_insights["clinical_codes"],
+            "critical_findings": health_insights["critical_findings"],
+            "follow_up_recommendation": health_insights["follow_up_recommendation"],
             "status": "DRAFT"
         }
     }
+
+    db.close()
+
+    return response_data

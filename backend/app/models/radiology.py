@@ -52,6 +52,12 @@ class RadiologyReport(Base):
 
     comparison = Column(Text)
 
+    clinical_codes = Column(Text, nullable=True)
+
+    critical_findings = Column(String, default="false")
+
+    follow_up_recommendation = Column(Text, nullable=True)
+
     status = Column(Text, default="DRAFT")
 
     embedding = Column(Text, nullable=True)  # pgvector Vector(1536) on PostgreSQL

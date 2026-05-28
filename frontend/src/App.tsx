@@ -19,7 +19,6 @@ import SettingsPage from '@/pages/SettingsPage'
 import VerifyEmailPage from '@/pages/VerifyEmailPage'
 import DictationPage from '@/pages/DictationPage'
 import RadiologyViewerPage from '@/pages/RadiologyViewerPage'
-import DeveloperSettingsPage from '@/pages/DeveloperSettingsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -62,7 +61,6 @@ export default function App() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="audit" element={<AuditPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="developer" element={<DeveloperSettingsPage />} />
         <Route path="api-keys" element={<APIKeysPage />} />
       </Route>
 

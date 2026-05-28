@@ -130,6 +130,16 @@ def on_startup():
             logger.info("Migrating: adding version column to reports...")
             conn.execute(text("ALTER TABLE reports ADD COLUMN version INTEGER DEFAULT 1 NOT NULL"))
             logger.info("Migration complete: version added to reports.")
+            
+        # Add new radiology Phase 3 columns if missing
+        if "radiology_reports" in inspector.get_table_names():
+            rad_cols = [c["name"] for c in inspector.get_columns("radiology_reports")]
+            if "clinical_codes" not in rad_cols:
+                logger.info("Migrating: adding Phase 3 columns to radiology_reports...")
+                conn.execute(text("ALTER TABLE radiology_reports ADD COLUMN clinical_codes TEXT"))
+                conn.execute(text("ALTER TABLE radiology_reports ADD COLUMN critical_findings VARCHAR DEFAULT 'false'"))
+                conn.execute(text("ALTER TABLE radiology_reports ADD COLUMN follow_up_recommendation TEXT"))
+                logger.info("Migration complete: Phase 3 columns added.")
     # -------------------------------------------------------------------
 
 api_v1 = APIRouter(prefix="/api/v1")
