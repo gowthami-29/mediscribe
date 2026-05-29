@@ -20,7 +20,7 @@ export function useRecording() {
   } = useConsultationStore()
 
   const timerRef =
-    useRef<ReturnType<typeof setInterval> | null>(null)
+  useRef<number | null>(null)
 
   const mediaRecorderRef =
     useRef<MediaRecorder | null>(null)
