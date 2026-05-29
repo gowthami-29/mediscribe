@@ -180,6 +180,7 @@ async def generate_pdf_from_report(
 async def save_dictation(
     report_data: str = Form(..., description="JSON string of the dictation report"),
     report_id: Optional[str] = Form(None, description="Optional ID of existing report to update"),
+    patient_id: Optional[str] = Form(None, description="Optional patient ID linked to the report"),
     letterhead: Optional[UploadFile] = File(None, description="Clinic letterhead image (PNG/JPG)"),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -268,6 +269,8 @@ async def save_dictation(
                 
             db_report.version += 1
             db_report.updated_at = datetime.utcnow()
+            if patient_id:
+                db_report.patient_id = patient_id
         else:
             # Create new report
             db_report = Report(
@@ -279,7 +282,8 @@ async def save_dictation(
                 assessment=json.dumps(assessment_data),
                 plan=json.dumps(plan_data),
                 medications=report_dict.get("medications", []),
-                key_entities=key_entities
+                key_entities=key_entities,
+                patient_id=patient_id
             )
             db.add(db_report)
             

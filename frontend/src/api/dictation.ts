@@ -103,12 +103,16 @@ export const dictationApi = {
   save: async (
     report: DictationReport,
     letterheadFile?: File | null,
-    reportId?: string | null
+    reportId?: string | null,
+    patientId?: string | null
   ): Promise<{ success: boolean; report_id: string }> => {
     const form = new FormData()
     form.append('report_data', JSON.stringify(report))
     if (reportId) {
       form.append('report_id', reportId)
+    }
+    if (patientId) {
+      form.append('patient_id', patientId)
     }
     if (letterheadFile) {
       form.append('letterhead', letterheadFile, letterheadFile.name)

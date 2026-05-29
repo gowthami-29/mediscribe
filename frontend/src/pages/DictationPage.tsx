@@ -504,7 +504,7 @@ export default function DictationPage() {
                     setSaveSuccess(false)
                     setErrorMsg('')
                     try {
-                      const res = await dictationApi.save(report, letterhead, currentReportId)
+                      const res = await dictationApi.save(report, letterhead, currentReportId, patientId)
                       if (res.report_id) {
                         setCurrentReportId(res.report_id)
                       }
