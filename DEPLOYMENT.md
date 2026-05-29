@@ -1,4 +1,4 @@
-# MediScribe — Deployment Guide
+# ArogyaScribe — Deployment Guide
 
 ## Local Development
 
@@ -16,7 +16,7 @@ pip install -r requirements.txt
 Create a `.env` file in the `backend/` directory:
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mediscribe
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/arogyascribe
 SECRET_KEY=your_secret_key_here
 ALGORITHM=HS256
 
@@ -31,7 +31,7 @@ ASSEMBLYAI_API_KEY=your_assemblyai_key
 B2_KEY_ID=your_b2_key_id
 B2_APPLICATION_KEY=your_b2_app_key
 B2_ENDPOINT=https://s3.us-east-005.backblazeb2.com
-B2_BUCKET_NAME=mediscribe-audio
+B2_BUCKET_NAME=arogyascribe-audio
 ```
 
 Start the backend:

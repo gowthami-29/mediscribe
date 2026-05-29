@@ -16,7 +16,7 @@ env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "MediScribe"
+    PROJECT_NAME: str = "ArogyaScribe"
     VERSION: str = "2.0.0"
     API_V1_STR: str = "/api/v1"
     
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "*").split(",")
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./mediscribe.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./arogyascribe.db")
     
      # Supabase
     SUPABASE_URL: Optional[str] = os.getenv("SUPABASE_URL")
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     B2_KEY_ID: Optional[str] = os.getenv("B2_KEY_ID")
     B2_APPLICATION_KEY: Optional[str] = os.getenv("B2_APPLICATION_KEY")
     B2_ENDPOINT: Optional[str] = os.getenv("B2_ENDPOINT")
-    B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME", "mediscribe-audio")
+    B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME", "arogyascribe-audio")
     
     # File Uploads
     UPLOAD_DIR: str = "uploads"

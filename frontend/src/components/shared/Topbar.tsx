@@ -27,7 +27,7 @@ export default function Topbar() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   const meta = Object.entries(PAGE_META).find(([k]) => pathname.startsWith(k))?.[1]
-              ?? { title: 'MediScribe', emoji: '✦' }
+              ?? { title: 'ArogyaScribe', emoji: '✦' }
 
   return (
     <>

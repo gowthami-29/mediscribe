@@ -23,9 +23,9 @@ dist-ssr
 *.sln
 *.sw?
   
-MediScribe_Production_Grade_Architecture.* 
+ArogyaScribe_Production_Grade_Architecture.* 
 
-# MediScribe Specific
+# ArogyaScribe Specific
 backend/uploads/
 __pycache__/
 *.pyc

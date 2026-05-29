@@ -40,16 +40,16 @@ const STATS = [
 ]
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Record the Consultation',  desc: 'Start a session and let MediScribe capture the conversation in real-time with crystal-clear audio processing.', icon: Mic },
+  { step: '01', title: 'Record the Consultation',  desc: 'Start a session and let ArogyaScribe capture the conversation in real-time with crystal-clear audio processing.', icon: Mic },
   { step: '02', title: 'AI Transcribes & Analyzes',desc: 'Azure Speech Services transcribes every word while GPT-4 understands clinical context and medical terminology.', icon: Brain },
   { step: '03', title: 'SOAP Note Generated',      desc: 'A structured, accurate SOAP note is ready for your review within seconds — fully editable and exportable.', icon: FileText },
   { step: '04', title: 'Export & Distribute',      desc: 'Export to PDF or DOCX, send via email, or integrate with your existing EHR system seamlessly.', icon: Cloud },
 ]
 
 const TESTIMONIALS = [
-  { name: 'Dr. Sarah Mitchell', role: 'General Practitioner', org: 'City Health Clinic',       text: 'MediScribe has completely transformed my workflow. I spend 70% less time on documentation and more time with my patients.', rating: 5 },
+  { name: 'Dr. Sarah Mitchell', role: 'General Practitioner', org: 'City Health Clinic',       text: 'ArogyaScribe has completely transformed my workflow. I spend 70% less time on documentation and more time with my patients.', rating: 5 },
   { name: 'Dr. Raj Patel',      role: 'Cardiologist',         org: 'Metro Heart Institute',    text: 'The AI analysis feature is remarkable. It catches details I might miss and structures them perfectly into SOAP format.', rating: 5 },
-  { name: 'Dr. Emily Chen',     role: 'Pediatrician',         org: "Children's Wellness Center",text: 'HIPAA compliance was our biggest concern. MediScribe handles it flawlessly with enterprise-grade security.', rating: 5 },
+  { name: 'Dr. Emily Chen',     role: 'Pediatrician',         org: "Children's Wellness Center",text: 'HIPAA compliance was our biggest concern. ArogyaScribe handles it flawlessly with enterprise-grade security.', rating: 5 },
 ]
 
 const TECH_STACK = [
@@ -83,7 +83,7 @@ export default function LandingPage() {
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#0d9488,#14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Stethoscope size={20} color="#fff" />
           </div>
-          <span style={{ fontSize: 20, fontWeight: 700, color: '#0d1117', fontFamily: "'DM Serif Display',Georgia,serif" }}>MediScribe</span>
+          <span style={{ fontSize: 20, fontWeight: 700, color: '#0d1117', fontFamily: "'DM Serif Display',Georgia,serif" }}>ArogyaScribe</span>
         </div>
 
         {/* Desktop nav links */}
@@ -170,7 +170,7 @@ export default function LandingPage() {
           </h1>
 
           <p style={{ fontSize: 'clamp(14px,2vw,18px)', color: '#6b7280', maxWidth: 600, margin: '0 auto 40px', lineHeight: 1.75 }}>
-            MediScribe automates SOAP note generation, transcribes consultations in real-time, and analyses medical documents — so you can focus entirely on patient care.
+            ArogyaScribe automates SOAP note generation, transcribes consultations in real-time, and analyses medical documents — so you can focus entirely on patient care.
           </p>
 
           {/* Hero CTAs — Explore Platform + Workflow */}
@@ -201,7 +201,7 @@ export default function LandingPage() {
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981' }} />
               <div style={{ flex: 1, background: '#e1e7f0', borderRadius: 6, height: 22, marginLeft: 8, display: 'flex', alignItems: 'center', paddingLeft: 10 }}>
-                <span style={{ fontSize: 11, color: '#9ca3af' }}>app.mediscribe.ai/dashboard</span>
+                <span style={{ fontSize: 11, color: '#9ca3af' }}>app.arogyascribe.ai/dashboard</span>
               </div>
             </div>
             {/* Stat cards */}
@@ -268,7 +268,7 @@ export default function LandingPage() {
               Everything You Need to <GradText>Document Smarter</GradText>
             </h2>
             <p style={{ fontSize: 15, color: '#6b7280', maxWidth: 540, margin: '0 auto', lineHeight: 1.75 }}>
-              From real-time transcription to AI-powered analysis, MediScribe covers every step of your clinical documentation workflow.
+              From real-time transcription to AI-powered analysis, ArogyaScribe covers every step of your clinical documentation workflow.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 22 }}>
@@ -334,7 +334,7 @@ export default function LandingPage() {
               Upload Any Medical Document.<br /><GradText>AI Does the Rest.</GradText>
             </h2>
             <p style={{ fontSize: 14.5, color: '#6b7280', lineHeight: 1.75, marginBottom: 26 }}>
-              Upload PDFs, DOCX files, or scanned images of medical records. MediScribe's GPT-4 pipeline extracts clinical entities, generates structured SOAP notes, and provides a side-by-side comparison with your existing records.
+              Upload PDFs, DOCX files, or scanned images of medical records. ArogyaScribe's GPT-4 pipeline extracts clinical entities, generates structured SOAP notes, and provides a side-by-side comparison with your existing records.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
@@ -407,7 +407,7 @@ export default function LandingPage() {
               Built for Healthcare's <GradText>Strictest Standards</GradText>
             </h2>
             <p style={{ fontSize: 15, color: '#8b949e', maxWidth: 520, margin: '0 auto', lineHeight: 1.75 }}>
-              Every layer of MediScribe is designed with HIPAA, GDPR, and SOC 2 compliance in mind — from encryption to audit trails.
+              Every layer of ArogyaScribe is designed with HIPAA, GDPR, and SOC 2 compliance in mind — from encryption to audit trails.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 18 }}>
@@ -490,7 +490,7 @@ export default function LandingPage() {
             Ready to Transform Your Clinical Documentation?
           </h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: 32, lineHeight: 1.75 }}>
-            Join 500+ healthcare professionals who save hours every day with MediScribe.
+            Join 500+ healthcare professionals who save hours every day with ArogyaScribe.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/login')}
@@ -522,7 +522,7 @@ export default function LandingPage() {
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#0d9488,#14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Stethoscope size={15} color="#fff" />
                 </div>
-                <span style={{ fontSize: 17, fontWeight: 700, color: '#f0f6fc', fontFamily: "'DM Serif Display',serif" }}>MediScribe</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: '#f0f6fc', fontFamily: "'DM Serif Display',serif" }}>ArogyaScribe</span>
               </div>
               <p style={{ fontSize: 12.5, lineHeight: 1.7, color: '#6b7280', maxWidth: 200 }}>
                 AI-powered clinical documentation platform for healthcare professionals.
@@ -564,7 +564,7 @@ export default function LandingPage() {
           {/* Bottom bar */}
           <div style={{ borderTop: '1px solid #21262d', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <p style={{ fontSize: 12, color: '#484f58' }}>
-              © 2026 MediScribe. Built with Love❤️.
+              © 2026 ArogyaScribe. Built with Love❤️.
             </p>
           </div>
         </div>

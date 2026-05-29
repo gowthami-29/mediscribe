@@ -50,7 +50,7 @@ const Logo: React.FC<LogoProps> = ({
               lineHeight: 1.1 
             }}
           >
-            MediScribe
+            ArogyaScribe
           </span>
           <span 
             style={{ 

@@ -169,7 +169,7 @@ class ExportService:
         # Header
         story.append(
             Paragraph(
-                "MediScribe",
+                "ArogyaScribe",
                 title_style
             )
         )
@@ -407,7 +407,7 @@ class ExportService:
 
         story.append(
             Paragraph(
-                f"Digitally prepared by MediScribe AI Platform • {timestamp}",
+                f"Digitally prepared by ArogyaScribe AI Platform • {timestamp}",
                 label_style
             )
         )
@@ -483,7 +483,7 @@ class ExportService:
         story = []
 
         # Header
-        story.append(Paragraph("MediScribe", title_style))
+        story.append(Paragraph("ArogyaScribe", title_style))
         story.append(Paragraph("Radiology AI Report", styles["Heading2"]))
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#e5e7eb")))
         story.append(Spacer(1, 0.3 * cm))
@@ -536,7 +536,7 @@ class ExportService:
         story.append(Spacer(1, 0.5 * cm))
         story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb")))
         story.append(Spacer(1, 0.2 * cm))
-        story.append(Paragraph(f"Digitally prepared by MediScribe AI Platform • {timestamp}", label_style))
+        story.append(Paragraph(f"Digitally prepared by ArogyaScribe AI Platform • {timestamp}", label_style))
 
         doc.build(story)
         buffer.seek(0)
@@ -578,7 +578,7 @@ class ExportService:
         )
 
         title = doc.add_heading(
-            "MediScribe — Clinical SOAP Report",
+            "ArogyaScribe — Clinical SOAP Report",
             0
         )
 

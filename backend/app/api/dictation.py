@@ -124,7 +124,7 @@ async def generate_pdf(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f'attachment; filename="mediscribe_report_{uuid.uuid4().hex[:8]}.pdf"',
+                "Content-Disposition": f'attachment; filename="arogyascribe_report_{uuid.uuid4().hex[:8]}.pdf"',
                 "Content-Length": str(len(pdf_bytes)),
             },
         )
@@ -169,7 +169,7 @@ async def generate_pdf_from_report(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f'attachment; filename="mediscribe_report_{uuid.uuid4().hex[:8]}.pdf"',
+                "Content-Disposition": f'attachment; filename="arogyascribe_report_{uuid.uuid4().hex[:8]}.pdf"',
                 "Content-Length": str(len(pdf_bytes)),
             },
         )

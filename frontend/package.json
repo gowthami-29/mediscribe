@@ -1,7 +1,7 @@
 {
-  "name": "mediscribe",
+  "name": "arogyascribe",
   "version": "2.0.0",
-  "description": "MediScribe - Production-Grade Healthcare Documentation Platform",
+  "description": "ArogyaScribe - Production-Grade Healthcare Documentation Platform",
   "type": "module",
   "scripts": {
     "dev": "vite",

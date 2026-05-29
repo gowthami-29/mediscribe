@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      title="MediScribe"
+      title="ArogyaScribe"
       subtitle="Production-Grade Healthcare Documentation Platform"
       wide={isWide}
     >

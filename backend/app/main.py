@@ -19,7 +19,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[logging.StreamHandler()]
 )
-logger = logging.getLogger("mediscribe")
+logger = logging.getLogger("arogyascribe")
 print("ACTIVE DATABASE:", settings.DATABASE_URL)
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -47,7 +47,7 @@ app.add_middleware(
         "https://localhost:3000",
         "https://127.0.0.1:3000",
         "https://[::1]:3000",
-        "https://mediscribe-kohl.vercel.app",
+        "https://arogyascribe-kohl.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -97,7 +97,7 @@ from app.api.external_radiology import router as external_radiology_router
 # Create all database tables (Note: In production with migrations, this might be handled by Alembic)
 @app.on_event("startup")
 def on_startup():
-    logger.info("Starting MediScribe API...")
+    logger.info("Starting ArogyaScribe API...")
     
     # Enable pgvector extension for non-sqlite databases before table creation
     if not settings.DATABASE_URL.startswith("sqlite"):
@@ -160,4 +160,4 @@ app.include_router(api_v1)
 
 @app.get("/")
 def read_root():
-    return {"message": "MediScribe Backend API is running.", "docs": "/docs"}
+    return {"message": "ArogyaScribe Backend API is running.", "docs": "/docs"}

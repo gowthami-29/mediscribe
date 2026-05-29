@@ -130,7 +130,7 @@ const LoginForm: React.FC = () => {
         disabled={isSubmitting}
         className="btn btn-primary w-full py-3"
       >
-        {isSubmitting ? 'Signing in…' : 'Sign In to MediScribe'}
+        {isSubmitting ? 'Signing in…' : 'Sign In to ArogyaScribe'}
       </button>
 
       <div className="pt-2 text-center">

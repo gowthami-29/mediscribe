@@ -31,7 +31,7 @@ export const useUIStore = create<UIState>()(
       setPanelSize: (id, size) => set((s) => ({ panelSizes: { ...s.panelSizes, [id]: size } })),
     }),
     {
-      name: 'mediscribe-ui',
+      name: 'arogyascribe-ui',
       // After rehydration from localStorage, force sidebar closed on mobile
       onRehydrateStorage: () => (state) => {
         if (state && isMobile()) {
