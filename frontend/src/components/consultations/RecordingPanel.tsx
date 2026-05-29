@@ -102,7 +102,7 @@ export default function RecordingPanel({
         audioBlob
       ),
 
-    onSuccess: async (data) => {
+    onSuccess: async () => {
       // Backend now returns processing status immediately
       toast.success('Audio uploaded. Processing in background...')
       pollStatus()

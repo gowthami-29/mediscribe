@@ -38,10 +38,6 @@ export function useRecording() {
   const audioContextRef =
     useRef<AudioContext | null>(null)
 
-  const speechRecognitionRef =
-    useRef<any>(null)
-
-  const speechRecognitionWantedRef = useRef(false)
   const finalTranscriptRef = useRef('')
   
   const wsRef = useRef<WebSocket | null>(null)
