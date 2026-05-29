@@ -8,6 +8,7 @@ import { dictationApi } from '@/api/dictation'
 import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import { useDictationStore } from '@/store/dictationStore'
+import { apiClient } from '@/api/client'
 
 // Extended window type for webkitSpeechRecognition
 declare global {
@@ -40,7 +41,13 @@ export default function DictationPage() {
   // MediaRecorder refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  const recognitionRef = useRef<any>(null)
+  
+  // AssemblyAI WebSockets refs
+  const wsRef = useRef<WebSocket | null>(null)
+  const audioProcessorRef = useRef<ScriptProcessorNode | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const sessionReadyRef = useRef(false)
+  const finalTranscriptRef = useRef('')
 
   // Fetch patients list for context
   const { data: patients } = useQuery({
@@ -70,55 +77,95 @@ export default function DictationPage() {
   }
 
   // Initialize Speech Recognition for Real-time Display
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition()
-      rec.continuous = true
-      rec.interimResults = true
-      rec.lang = 'en-US'
-
-      rec.onresult = (event: any) => {
-        let interimTranscript = ''
-        let finalTranscript = ''
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' '
-          } else {
-            interimTranscript += event.results[i][0].transcript
-          }
-        }
-
-        setRealtimeText(interimTranscript)
-        if (finalTranscript) {
-          const currentTranscript = useDictationStore.getState().transcript;
-          setTranscript(currentTranscript + finalTranscript)
-        }
-      }
-
-      rec.onerror = (e: any) => {
-        console.error('Speech recognition error', e)
-        if (e.error !== 'no-speech') {
-          setStatusText(`Mic error: ${e.error}`)
-        }
-      }
-
-      recognitionRef.current = rec
-    } else {
-      console.warn('Web Speech API is not supported in this browser.')
-    }
-  }, [])
+  // Native SpeechRecognition is removed due to Chromium Electron network errors.
 
   // Start recording audio and live transcription
   const startRecording = async () => {
     setErrorMsg('')
     setRealtimeText('')
     audioChunksRef.current = []
+    finalTranscriptRef.current = useDictationStore.getState().transcript || ''
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 })
+      audioContextRef.current = audioContext
+      const source = audioContext.createMediaStreamSource(stream)
+
+      // AssemblyAI Real-Time WebSocket
+      try {
+        const { data } = await apiClient.get('/speech/assemblyai-token')
+        const token = data.token
+
+        const ws = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`)
+        wsRef.current = ws
+
+        ws.onopen = () => console.log('[AssemblyAI] WebSocket opened')
+        
+        ws.onmessage = (message) => {
+          const res = JSON.parse(message.data)
+          
+          if (res.error) {
+            console.error('[AssemblyAI] Error:', res.error)
+            setStatusText('Live transcription error: ' + res.error)
+            return
+          }
+
+          if (res.message_type === 'SessionBegins') {
+            sessionReadyRef.current = true
+            return
+          }
+
+          if (res.message_type === 'PartialTranscript') {
+            setRealtimeText(res.text)
+          } else if (res.message_type === 'FinalTranscript') {
+            finalTranscriptRef.current = `${finalTranscriptRef.current} ${res.text}`.trim()
+            setTranscript(finalTranscriptRef.current)
+            setRealtimeText('')
+          }
+        }
+
+        ws.onerror = (error) => console.error('[AssemblyAI] WebSocket error:', error)
+
+        ws.onclose = () => {
+          wsRef.current = null
+          sessionReadyRef.current = false
+        }
+
+        const processor = audioContext.createScriptProcessor(4096, 1, 1)
+        audioProcessorRef.current = processor
+        
+        processor.onaudioprocess = (e) => {
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !sessionReadyRef.current) return
+          
+          const channelData = e.inputBuffer.getChannelData(0)
+          const pcm16 = new Int16Array(channelData.length)
+          for (let i = 0; i < channelData.length; i++) {
+            pcm16[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF
+          }
+          
+          const uint8 = new Uint8Array(pcm16.buffer)
+          let binary = ''
+          for (let i = 0; i < uint8.byteLength; i++) {
+            binary += String.fromCharCode(uint8[i])
+          }
+          const base64 = btoa(binary)
+          
+          wsRef.current.send(JSON.stringify({ audio_data: base64 }))
+        }
+        
+        const gainNode = audioContext.createGain()
+        gainNode.gain.value = 0
+        source.connect(processor)
+        processor.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+      } catch (err: any) {
+        console.warn('[Recording] Could not start AssemblyAI:', err)
+        setStatusText('Live transcription unavailable: ' + (err.response?.data?.detail || err.message))
+      }
+
       // Setup audio recording
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
       mediaRecorderRef.current = mediaRecorder
@@ -130,6 +177,10 @@ export default function DictationPage() {
       }
 
       mediaRecorder.onstop = async () => {
+        if (audioContextRef.current) {
+          audioContextRef.current.close()
+          audioContextRef.current = null
+        }
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         stream.getTracks().forEach(track => track.stop())
         await processAudio(audioBlob)
@@ -140,14 +191,6 @@ export default function DictationPage() {
       setIsRecording(true)
       setStatusText('Listening actively... speak now.')
 
-      // Start live speech recognition
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start()
-        } catch (err) {
-          console.error('Recognition start error', err)
-        }
-      }
     } catch (err: any) {
       console.error('Failed to get media devices', err)
       setErrorMsg('Could not access your microphone. Please check system permissions.')
@@ -162,12 +205,17 @@ export default function DictationPage() {
       setIsRecording(false)
       setStatusText('Recording stopped. Processing audio...')
 
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop()
-        } catch (err) {
-          console.error('Recognition stop error', err)
+      if (wsRef.current) {
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ terminate_session: true }))
         }
+        wsRef.current.close()
+        wsRef.current = null
+        sessionReadyRef.current = false
+      }
+      if (audioProcessorRef.current) {
+        audioProcessorRef.current.disconnect()
+        audioProcessorRef.current = null
       }
     }
   }
