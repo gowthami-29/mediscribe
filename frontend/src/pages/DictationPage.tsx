@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { 
   Mic, MicOff, Upload, FileText, Printer, Save,
   RefreshCw, Trash2, ArrowRight, User, AlertCircle,
