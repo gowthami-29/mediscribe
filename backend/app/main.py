@@ -48,6 +48,7 @@ app.add_middleware(
         "https://127.0.0.1:3000",
         "https://[::1]:3000",
         "https://arogyascribe-kohl.vercel.app",
+        "https://mediscribe-kohl.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
