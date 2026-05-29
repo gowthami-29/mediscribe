@@ -8,6 +8,7 @@ import {
 import toast from 'react-hot-toast'
 
 import { useConsultationStore } from '@/store/consultationStore'
+import { apiClient } from '@/api/client'
 
 export function useRecording() {
 
@@ -40,11 +41,11 @@ export function useRecording() {
   const speechRecognitionRef =
     useRef<any>(null)
 
-  const speechRecognitionWantedRef =
-    useRef(false)
-
-  const finalTranscriptRef =
-    useRef('')
+  const speechRecognitionWantedRef = useRef(false)
+  const finalTranscriptRef = useRef('')
+  
+  const wsRef = useRef<WebSocket | null>(null)
+  const audioProcessorRef = useRef<ScriptProcessorNode | null>(null)
 
   const [analyser, setAnalyser] =
     useState<AnalyserNode | null>(null)
@@ -89,62 +90,65 @@ export function useRecording() {
       audioChunksRef.current = []
       finalTranscriptRef.current = ''
 
-      const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition
+      // AssemblyAI Real-Time WebSocket
+      try {
+        const { data } = await apiClient.get('/speech/assemblyai-token')
+        const token = data.token
 
-      if (SpeechRecognition) {
-        speechRecognitionWantedRef.current = true
+        const ws = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`)
+        wsRef.current = ws
 
-        const startLiveRecognition = () => {
-          if (!speechRecognitionWantedRef.current) return
+        ws.onopen = () => {
+          console.log('[AssemblyAI] WebSocket opened')
+        }
 
-          const recognition = new SpeechRecognition()
-          recognition.continuous = true
-          recognition.interimResults = true
-          recognition.lang = 'en-US'
-
-          recognition.onresult = (event: any) => {
-            let interimTranscript = ''
-
-            for (let i = event.resultIndex; i < event.results.length; i += 1) {
-              const text = event.results[i][0].transcript
-
-              if (event.results[i].isFinal) {
-                finalTranscriptRef.current = `${finalTranscriptRef.current} ${text}`.trim()
-              } else {
-                interimTranscript += text
-              }
-            }
-
-            appendTranscript(
-              `${finalTranscriptRef.current} ${interimTranscript}`.trim()
-            )
-          }
-
-          recognition.onerror = (event: any) => {
-            console.warn('[Recording] Live speech recognition error:', event.error)
-          }
-
-          recognition.onend = () => {
-            speechRecognitionRef.current = null
-
-            if (speechRecognitionWantedRef.current) {
-              window.setTimeout(startLiveRecognition, 300)
-            }
-          }
-
-          try {
-            recognition.start()
-            speechRecognitionRef.current = recognition
-          } catch (error) {
-            console.warn('[Recording] Could not start live speech recognition:', error)
+        ws.onmessage = (message) => {
+          const res = JSON.parse(message.data)
+          if (res.message_type === 'PartialTranscript') {
+            appendTranscript(`${finalTranscriptRef.current} ${res.text}`.trim())
+          } else if (res.message_type === 'FinalTranscript') {
+            finalTranscriptRef.current = `${finalTranscriptRef.current} ${res.text}`.trim()
+            appendTranscript(finalTranscriptRef.current)
           }
         }
 
-        startLiveRecognition()
-      } else {
-        console.warn('[Recording] Live speech recognition is not supported by this browser')
+        ws.onerror = (error) => {
+          console.error('[AssemblyAI] WebSocket error:', error)
+        }
+
+        ws.onclose = () => {
+          console.log('[AssemblyAI] WebSocket closed')
+          wsRef.current = null
+        }
+
+        // Setup ScriptProcessorNode for PCM streaming
+        const processor = audioContext.createScriptProcessor(4096, 1, 1)
+        audioProcessorRef.current = processor
+        
+        processor.onaudioprocess = (e) => {
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+          
+          const channelData = e.inputBuffer.getChannelData(0)
+          const pcm16 = new Int16Array(channelData.length)
+          for (let i = 0; i < channelData.length; i++) {
+            pcm16[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF
+          }
+          
+          const uint8 = new Uint8Array(pcm16.buffer)
+          let binary = ''
+          for (let i = 0; i < uint8.byteLength; i++) {
+            binary += String.fromCharCode(uint8[i])
+          }
+          const base64 = btoa(binary)
+          
+          wsRef.current.send(JSON.stringify({ audio_data: base64 }))
+        }
+        
+        source.connect(processor)
+        processor.connect(audioContext.destination)
+        
+      } catch (err) {
+        console.warn('[Recording] Could not start AssemblyAI Live Transcription:', err)
       }
 
       // Create media recorder
@@ -192,15 +196,17 @@ export function useRecording() {
     return new Promise((resolve) => {
 
       stopRecording()
-      speechRecognitionWantedRef.current = false
-
-      if (speechRecognitionRef.current) {
-        try {
-          speechRecognitionRef.current.stop()
-        } catch (error) {
-          console.warn('[Recording] Could not stop live speech recognition:', error)
+      if (wsRef.current) {
+        // Send termination message and close
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ terminate_session: true }))
         }
-        speechRecognitionRef.current = null
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      if (audioProcessorRef.current) {
+        audioProcessorRef.current.disconnect()
+        audioProcessorRef.current = null
       }
 
       if (timerRef.current) {
@@ -279,8 +285,14 @@ export function useRecording() {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
-      speechRecognitionWantedRef.current = false
-      if (speechRecognitionRef.current) speechRecognitionRef.current.stop()
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      if (audioProcessorRef.current) {
+        audioProcessorRef.current.disconnect()
+        audioProcessorRef.current = null
+      }
       if (audioContextRef.current) audioContextRef.current.close()
       streamRef.current
         ?.getTracks()

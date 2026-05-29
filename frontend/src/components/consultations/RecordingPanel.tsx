@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import { useMutation } from '@tanstack/react-query'
 
@@ -55,9 +55,47 @@ export default function RecordingPanel({
     >('idle')
 
 
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    return () => stopPolling()
+  }, [])
+
+  const pollStatus = () => {
+    if (pollIntervalRef.current) return
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const consultation = await consultationsApi.get(consultationId)
+        
+        if (consultation.status === 'completed') {
+          stopPolling()
+          if (consultation.transcription_text) {
+            appendTranscript(consultation.transcription_text)
+          }
+          toast.success('Consultation completed and report generated!')
+          setPhase('done')
+          setTimeout(onComplete, 3000)
+        } else if (consultation.status === 'failed' || consultation.status === 'failed_transcription' || consultation.status === 'failed_soap') {
+          stopPolling()
+          toast.error('Audio processing or AI generation failed. Please try again.')
+          setPhase('idle')
+        }
+      } catch (err) {
+        console.error('Polling error:', err)
+      }
+    }, 5000)
+  }
+
   // END CONSULTATION
   const endMut = useMutation({
-
     mutationFn: (audioBlob: Blob) =>
       consultationsApi.end(
         consultationId,
@@ -65,29 +103,9 @@ export default function RecordingPanel({
       ),
 
     onSuccess: async (data) => {
-      if (data?.transcription_text) {
-        appendTranscript(data.transcription_text)
-      }
-
-      // The /end endpoint already runs transcription + SOAP generation internally.
-      // Only call generateSoap as a fallback if transcription completed but no report yet.
-      if (data?.transcription_status === 'completed') {
-        try {
-          await consultationsApi.generateSoap(consultationId)
-          toast.success('SOAP report generated successfully')
-        } catch (err) {
-          // Report may already exist from the end endpoint — that's fine
-          console.warn('[SOAP] generateSoap fallback skipped (report may already exist):', err)
-          toast.success('Consultation completed')
-        }
-      } else if (data?.transcription_status === 'failed' || data?.transcription_status === 'failed_transcription') {
-        toast.error('Transcription failed — please try again')
-      } else {
-        toast.success('Consultation completed')
-      }
-
-      setPhase('done')
-      setTimeout(onComplete, 3000)
+      // Backend now returns processing status immediately
+      toast.success('Audio uploaded. Processing in background...')
+      pollStatus()
     },
 
     onError: (err: any) => {

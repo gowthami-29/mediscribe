@@ -9,6 +9,7 @@ from app.models.report import Report
 import hashlib
 from app.services.audit_service import audit_service
 from app.services.report_service import ReportService
+from app.db.database import SessionLocal
 
 class ConsultationService:
     @staticmethod
@@ -79,13 +80,12 @@ class ConsultationService:
             audit_service.log_event(db, action="consultation_started", user_id=consultation.user_id, organization_id=organization_id, resource_id=consultation_id)
         return consultation
     @staticmethod
-    def end_consultation(
+    def end_consultation_init(
         db: Session,
         consultation_id: str,
         organization_id: str,
         audio_file_path: str
     ):
-
         consultation = db.query(Consultation).filter(
             Consultation.consultation_id == consultation_id,
             Consultation.organization_id == organization_id
@@ -95,20 +95,40 @@ class ConsultationService:
             return None
 
         consultation.status = "processing"
-
         consultation.ended_at = datetime.now(timezone.utc)
-
-        # Duration
         if consultation.started_at:
+            delta = consultation.ended_at - consultation.started_at
+            consultation.duration_minutes = int(delta.total_seconds() / 60)
 
-            delta = (
-                consultation.ended_at -
-                consultation.started_at
-            )
+        consultation.audio_file_id = audio_file_path
+        
+        # Save checksum initially
+        try:
+            with open(audio_file_path, "rb") as f:
+                checksum = hashlib.sha256(f.read()).hexdigest()
+            consultation.audio_checksum = checksum
+        except Exception:
+            pass
 
-            consultation.duration_minutes = int(
-                delta.total_seconds() / 60
-            )
+        db.commit()
+        db.refresh(consultation)
+        return consultation
+
+    @staticmethod
+    def process_consultation_background(
+        consultation_id: str,
+        organization_id: str,
+        audio_file_path: str
+    ):
+        db = SessionLocal()
+        try:
+            consultation = db.query(Consultation).filter(
+                Consultation.consultation_id == consultation_id,
+                Consultation.organization_id == organization_id
+            ).first()
+
+            if not consultation:
+                return None
 
         try:
 
@@ -271,16 +291,15 @@ class ConsultationService:
                 )
 
         except Exception as e:
+            print(f"END CONSULTATION ERROR: {str(e)}")
+            if consultation:
+                consultation.status = "failed"
+                db.commit()
 
-            print(
-                f"END CONSULTATION ERROR: {str(e)}"
-            )
-
-            consultation.status = "failed"
-
-        db.commit()
-        print("REPORT SAVED")
-        db.refresh(consultation)
+        if consultation:
+            db.commit()
+            print("REPORT SAVED")
+            db.refresh(consultation)
 
         # Clean up local temp audio file after B2 upload
         try:
@@ -290,6 +309,7 @@ class ConsultationService:
         except Exception as cleanup_err:
             print(f"[Cleanup] Could not remove local file: {cleanup_err}")
 
+        db.close()
         return consultation
     
     @staticmethod

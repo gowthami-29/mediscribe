@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from fastapi.responses import Response
@@ -106,6 +106,7 @@ def start_consultation(
 @router.post("/{consultation_id}/end")
 async def end_consultation(
     consultation_id: str,
+    background_tasks: BackgroundTasks,
     audio: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(
@@ -122,7 +123,7 @@ async def end_consultation(
     with open(file_path, "wb") as buffer:
         buffer.write(await audio.read())
 
-    consultation = ConsultationService.end_consultation(
+    consultation = ConsultationService.end_consultation_init(
         db,
         consultation_id,
         current_user.organization_id,
@@ -134,6 +135,13 @@ async def end_consultation(
             status_code=404,
             detail="Consultation not found"
         )
+        
+    background_tasks.add_task(
+        ConsultationService.process_consultation_background,
+        consultation_id=consultation_id,
+        organization_id=current_user.organization_id,
+        audio_file_path=file_path
+    )
 
     return {
         "consultation_id": consultation.consultation_id,
