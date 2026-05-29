@@ -42,6 +42,7 @@ export function useRecording() {
   
   const wsRef = useRef<WebSocket | null>(null)
   const audioProcessorRef = useRef<ScriptProcessorNode | null>(null)
+  const sessionReadyRef = useRef(false)
 
   const [analyser, setAnalyser] =
     useState<AnalyserNode | null>(null)
@@ -100,6 +101,19 @@ export function useRecording() {
 
         ws.onmessage = (message) => {
           const res = JSON.parse(message.data)
+          
+          if (res.error) {
+            console.error('[AssemblyAI] Error:', res.error)
+            toast.error('Live transcription error: ' + res.error)
+            return
+          }
+
+          if (res.message_type === 'SessionBegins') {
+            console.log('[AssemblyAI] Session ready')
+            sessionReadyRef.current = true
+            return
+          }
+
           if (res.message_type === 'PartialTranscript') {
             appendTranscript(`${finalTranscriptRef.current} ${res.text}`.trim())
           } else if (res.message_type === 'FinalTranscript') {
@@ -110,11 +124,13 @@ export function useRecording() {
 
         ws.onerror = (error) => {
           console.error('[AssemblyAI] WebSocket error:', error)
+          toast.error('Live transcription connection error')
         }
 
         ws.onclose = () => {
           console.log('[AssemblyAI] WebSocket closed')
           wsRef.current = null
+          sessionReadyRef.current = false
         }
 
         // Setup ScriptProcessorNode for PCM streaming
@@ -122,7 +138,7 @@ export function useRecording() {
         audioProcessorRef.current = processor
         
         processor.onaudioprocess = (e) => {
-          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !sessionReadyRef.current) return
           
           const channelData = e.inputBuffer.getChannelData(0)
           const pcm16 = new Int16Array(channelData.length)
@@ -140,11 +156,16 @@ export function useRecording() {
           wsRef.current.send(JSON.stringify({ audio_data: base64 }))
         }
         
+        // Prevent audio feedback loop (echo)
+        const gainNode = audioContext.createGain()
+        gainNode.gain.value = 0
         source.connect(processor)
-        processor.connect(audioContext.destination)
+        processor.connect(gainNode)
+        gainNode.connect(audioContext.destination)
         
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[Recording] Could not start AssemblyAI Live Transcription:', err)
+        toast.error('Live transcription unavailable: ' + (err.response?.data?.detail || err.message))
       }
 
       // Create media recorder
@@ -199,6 +220,7 @@ export function useRecording() {
         }
         wsRef.current.close()
         wsRef.current = null
+        sessionReadyRef.current = false
       }
       if (audioProcessorRef.current) {
         audioProcessorRef.current.disconnect()
