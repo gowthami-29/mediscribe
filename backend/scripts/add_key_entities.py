@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect("mediscribe.db")
+conn = sqlite3.connect("arogyascribe.db")
 cur = conn.cursor()
 
 cur.execute("PRAGMA table_info(reports)")

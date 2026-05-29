@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthLayout
       title={!done ? "Reset Password" : "Password Updated!"}
-      subtitle={!done ? "Choose a strong new password for your MediScribe account." : ""}
+      subtitle={!done ? "Choose a strong new password for your ArogyaScribe account." : ""}
     >
       <div className="flex flex-col">
         {!done && (

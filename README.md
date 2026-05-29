@@ -1,6 +1,6 @@
-# ⚕️ MediScribe
+# ⚕️ ArogyaScribe
 
-**MediScribe** is a state-of-the-art, AI-powered clinical documentation platform designed to revolutionize the way healthcare professionals handle patient consultations. By leveraging advanced speech-to-text and large language models (GPT-4), MediScribe automates the generation of SOAP (Subjective, Objective, Assessment, Plan) notes, allowing doctors to focus more on patient care and less on paperwork.
+**ArogyaScribe** is a state-of-the-art, AI-powered clinical documentation platform designed to revolutionize the way healthcare professionals handle patient consultations. By leveraging advanced speech-to-text and large language models (GPT-4), ArogyaScribe automates the generation of SOAP (Subjective, Objective, Assessment, Plan) notes, allowing doctors to focus more on patient care and less on paperwork.
 
 ---
 
@@ -39,8 +39,8 @@ Follow the detailed instructions in [DEPLOYMENT.md](./DEPLOYMENT.md) to set up y
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/gowthami-29/mediscribe.git
-cd mediscribe
+git clone https://github.com/gowthami-29/arogyascribe.git
+cd arogyascribe
 
 # 2. Spin up the Backend
 cd backend
@@ -60,5 +60,5 @@ npm run dev
 ## 📄 License & Author
 
 Developed  by **Thummala Khalida** and **Gowthami Kanchi**.  
-MediScribe — Empowering Healthcare through AI.
+ArogyaScribe — Empowering Healthcare through AI.
 

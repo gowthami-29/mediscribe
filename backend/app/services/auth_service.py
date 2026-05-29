@@ -287,7 +287,7 @@ class AuthService:
         )
 
         # In production: send email with link like
-        #   https://app.mediscribe.ai/reset-password?token=<token>
+        #   https://app.arogyascribe.ai/reset-password?token=<token>
         # For now, return the token in the response so the frontend can use it
         # during development (remove in production).
         print(f"[DEV] Password reset token for {email}: {token}")

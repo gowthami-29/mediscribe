@@ -219,7 +219,7 @@ export default function DictationPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `MediScribe_Report_${report.patient_name.replace(/\s+/g, '_') || 'Patient'}.pdf`
+      a.download = `ArogyaScribe_Report_${report.patient_name.replace(/\s+/g, '_') || 'Patient'}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

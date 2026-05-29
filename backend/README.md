@@ -1,4 +1,4 @@
-# MediScribe Backend
+# ArogyaScribe Backend
 
 AI-powered healthcare SaaS backend for managing patients, consultations, speech transcription, SOAP report generation, and AI document analysis.
 
@@ -6,7 +6,7 @@ AI-powered healthcare SaaS backend for managing patients, consultations, speech 
 
 ## Overview
 
-MediScribe helps healthcare professionals:
+ArogyaScribe helps healthcare professionals:
 
 * Register hospitals/clinics (multi-tenant SaaS)
 * Manage healthcare staff with RBAC
@@ -282,7 +282,7 @@ Supported format:
 
 ```bash
 git clone <repo-url>
-cd mediscribe-backend
+cd arogyascribe-backend
 ```
 
 Create virtual environment:
@@ -369,4 +369,4 @@ Register
 
 **Gowthami Kanchi**
 
-Backend Developer – MediScribe
+Backend Developer – ArogyaScribe

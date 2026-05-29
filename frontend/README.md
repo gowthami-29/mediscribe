@@ -1,6 +1,6 @@
-# 🎨 MediScribe Frontend
+# 🎨 ArogyaScribe Frontend
 
-The elegant, responsive, and intuitive user interface for **MediScribe**. Built with **React 18**, **TypeScript**, and **Tailwind CSS**, it provides healthcare professionals with a premium experience for clinical documentation.
+The elegant, responsive, and intuitive user interface for **ArogyaScribe**. Built with **React 18**, **TypeScript**, and **Tailwind CSS**, it provides healthcare professionals with a premium experience for clinical documentation.
 
 ---
 
@@ -82,5 +82,5 @@ src/
 ## 👨‍💻 Author
 
 **Thummala Khalida**  
-Lead Frontend Developer – MediScribe
+Lead Frontend Developer – ArogyaScribe
 

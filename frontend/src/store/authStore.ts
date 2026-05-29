@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
     }),
     {
-      name: 'mediscribe-auth',
+      name: 'arogyascribe-auth',
       partialize: (s) => ({
         accessToken: s.accessToken,
         refreshToken: s.refreshToken,
