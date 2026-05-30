@@ -14,25 +14,103 @@ export function useRecording() {
 
   const {
     isRecording,
+    isPaused,
     startRecording,
     stopRecording,
+    pauseRecording,
+    resumeRecording,
     appendTranscript,
     setLiveText,
     tick,
   } = useConsultationStore()
 
-  const timerRef          = useRef<number | null>(null)
-  const mediaRecorderRef  = useRef<MediaRecorder | null>(null)
-  const streamRef         = useRef<MediaStream | null>(null)
-  const audioChunksRef    = useRef<Blob[]>([])
-  const recorderMimeRef   = useRef('audio/webm')
-  const audioContextRef   = useRef<AudioContext | null>(null)
-  const workletNodeRef    = useRef<AudioWorkletNode | null>(null)
-  const finalTextRef      = useRef('')
-  const wsRef             = useRef<WebSocket | null>(null)
-  const sessionReadyRef   = useRef(false)
+  const timerRef         = useRef<number | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef        = useRef<MediaStream | null>(null)
+  const audioChunksRef   = useRef<Blob[]>([])
+  const recorderMimeRef  = useRef('audio/webm')
+  const audioContextRef  = useRef<AudioContext | null>(null)
+  const workletNodeRef   = useRef<AudioWorkletNode | null>(null)
+  const finalTextRef     = useRef('')
+  const wsRef            = useRef<WebSocket | null>(null)
+  const sessionReadyRef  = useRef(false)
+  const pausedRef        = useRef(false)   // blocks PCM sends while paused
 
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
+
+
+  // ─── ASSEMBLYAI SESSION SETUP ─────────────────────────────────────────────
+  const connectAssemblyAI = useCallback(async (ctx: AudioContext, source: MediaStreamAudioSourceNode) => {
+    const { data } = await apiClient.get('/speech/assemblyai-token')
+    const token: string = data.token
+
+    const wsUrl =
+      `wss://streaming.assemblyai.com/v3/ws` +
+      `?sample_rate=16000` +
+      `&speech_model=universal-streaming-english` +
+      `&format_turns=true` +
+      `&token=${token}`
+
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onopen = () => console.log('[AssemblyAI] WebSocket connected')
+
+    ws.onmessage = (evt) => {
+      let msg: any
+      try { msg = JSON.parse(evt.data) } catch { return }
+
+      if (msg.error) {
+        console.error('[AssemblyAI] error:', msg.error)
+        toast.error('Transcription error: ' + msg.error)
+        return
+      }
+
+      if (msg.type === 'Begin') {
+        console.log('[AssemblyAI] Session ready — id:', msg.id)
+        sessionReadyRef.current = true
+        return
+      }
+
+      if (msg.type === 'Turn') {
+        const text: string = msg.transcript || ''
+        if (!msg.end_of_turn) {
+          setLiveText(text)
+        } else if (text) {
+          finalTextRef.current = `${finalTextRef.current} ${text}`.trim()
+          appendTranscript(finalTextRef.current)
+        }
+      }
+    }
+
+    ws.onerror = () => {
+      console.error('[AssemblyAI] WebSocket error')
+    }
+
+    ws.onclose = (evt) => {
+      console.log('[AssemblyAI] WebSocket closed', evt.code, evt.reason)
+      wsRef.current = null
+      sessionReadyRef.current = false
+    }
+
+    // AudioWorklet PCM pipeline
+    await ctx.audioWorklet.addModule('/pcm-processor.js')
+    const worklet = new AudioWorkletNode(ctx, 'pcm-processor')
+    workletNodeRef.current = worklet
+
+    worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
+      if (
+        pausedRef.current ||
+        !wsRef.current ||
+        wsRef.current.readyState !== WebSocket.OPEN ||
+        !sessionReadyRef.current
+      ) return
+      wsRef.current.send(e.data)
+    }
+
+    source.connect(worklet)
+    worklet.connect(ctx.destination)
+  }, [appendTranscript, setLiveText])
 
 
   // ─── START ────────────────────────────────────────────────────────────────
@@ -48,14 +126,14 @@ export function useRecording() {
         },
       })
       streamRef.current = stream
+      pausedRef.current = false
 
-      // AudioContext at 16 kHz — matches AssemblyAI requirement
       const ctx = new AudioContext({ sampleRate: 16000 })
       audioContextRef.current = ctx
 
       const source = ctx.createMediaStreamSource(stream)
 
-      // Analyser for the waveform visualiser
+      // Analyser for waveform visualiser
       const analyserNode = ctx.createAnalyser()
       analyserNode.fftSize = 256
       source.connect(analyserNode)
@@ -65,95 +143,15 @@ export function useRecording() {
       audioChunksRef.current = []
       finalTextRef.current   = ''
 
-      // ── AssemblyAI v3 WebSocket ──────────────────────────────────────────
+      // AssemblyAI WebSocket + AudioWorklet
       try {
-        const { data } = await apiClient.get('/speech/assemblyai-token')
-        const token: string = data.token
-
-        const wsUrl =
-          `wss://streaming.assemblyai.com/v3/ws` +
-          `?sample_rate=16000` +
-          `&speech_model=universal-streaming-english` +
-          `&format_turns=true` +
-          `&token=${token}`
-
-        const ws = new WebSocket(wsUrl)
-        wsRef.current = ws
-
-        ws.onopen = () => {
-          console.log('[AssemblyAI] WebSocket connected')
-        }
-
-        ws.onmessage = (evt) => {
-          let msg: any
-          try { msg = JSON.parse(evt.data) } catch { return }
-
-          if (msg.error) {
-            console.error('[AssemblyAI] error:', msg.error)
-            toast.error('Transcription error: ' + msg.error)
-            return
-          }
-
-          if (msg.type === 'Begin') {
-            console.log('[AssemblyAI] Session ready — id:', msg.id)
-            sessionReadyRef.current = true
-            return
-          }
-
-          if (msg.type === 'Turn') {
-            const text: string = msg.transcript || ''
-            if (!msg.end_of_turn) {
-              // Partial — update live caption
-              setLiveText(text)
-            } else if (text) {
-              // Turn complete — commit to transcript
-              finalTextRef.current = `${finalTextRef.current} ${text}`.trim()
-              appendTranscript(finalTextRef.current)
-            }
-          }
-        }
-
-        ws.onerror = () => {
-          console.error('[AssemblyAI] WebSocket error')
-          toast.error('Live transcription connection error')
-        }
-
-        ws.onclose = (evt) => {
-          console.log('[AssemblyAI] WebSocket closed', evt.code, evt.reason)
-          wsRef.current       = null
-          sessionReadyRef.current = false
-        }
-
-        // ── AudioWorklet PCM pipeline ──────────────────────────────────────
-        // Load the processor from /public (served at root)
-        await ctx.audioWorklet.addModule('/pcm-processor.js')
-
-        const worklet = new AudioWorkletNode(ctx, 'pcm-processor')
-        workletNodeRef.current = worklet
-
-        worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
-          if (
-            wsRef.current &&
-            wsRef.current.readyState === WebSocket.OPEN &&
-            sessionReadyRef.current
-          ) {
-            wsRef.current.send(e.data)
-          }
-        }
-
-        // source → analyser → worklet → (silent destination)
-        source.connect(worklet)
-        worklet.connect(ctx.destination)   // must be connected or Chrome suspends it
-
+        await connectAssemblyAI(ctx, source)
       } catch (err: any) {
         console.warn('[Recording] AssemblyAI setup failed:', err)
-        toast.error(
-          'Live transcription unavailable: ' +
-          (err?.response?.data?.detail ?? err?.message ?? 'unknown error')
-        )
+        toast.error('Live transcription unavailable: ' + (err?.response?.data?.detail ?? err?.message ?? 'unknown'))
       }
 
-      // ── MediaRecorder (for final batch upload) ───────────────────────────
+      // MediaRecorder for final batch upload
       const mime = [
         'audio/webm;codecs=opus',
         'audio/webm',
@@ -183,13 +181,71 @@ export function useRecording() {
       console.error('[Recording] Failed to start:', err)
       toast.error('Could not access microphone')
     }
-  }, [appendTranscript, setLiveText, startRecording, tick])
+  }, [connectAssemblyAI, startRecording, tick])
+
+
+  // ─── PAUSE ────────────────────────────────────────────────────────────────
+  const pause = useCallback(() => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return
+
+    pausedRef.current = true
+    mediaRecorderRef.current.pause()
+
+    // Freeze timer
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    // Gracefully close AssemblyAI session (audio will resume on resume())
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'Terminate' }))
+      wsRef.current.close()
+      wsRef.current = null
+      sessionReadyRef.current = false
+    }
+
+    pauseRecording()
+    console.log('[Recording] Paused')
+  }, [pauseRecording])
+
+
+  // ─── RESUME ───────────────────────────────────────────────────────────────
+  const resume = useCallback(async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'paused') return
+
+    pausedRef.current = false
+    mediaRecorderRef.current.resume()
+
+    // Restart timer
+    timerRef.current = window.setInterval(tick, 1000)
+
+    // Re-establish AssemblyAI session
+    if (audioContextRef.current && streamRef.current) {
+      try {
+        const source = audioContextRef.current.createMediaStreamSource(streamRef.current)
+        // Disconnect old worklet if still connected
+        if (workletNodeRef.current) {
+          workletNodeRef.current.disconnect()
+          workletNodeRef.current = null
+        }
+        await connectAssemblyAI(audioContextRef.current, source)
+      } catch (err: any) {
+        console.warn('[Recording] AssemblyAI reconnect failed:', err)
+        toast.error('Live transcription reconnect failed — audio still recording')
+      }
+    }
+
+    resumeRecording()
+    console.log('[Recording] Resumed')
+  }, [connectAssemblyAI, resumeRecording, tick])
 
 
   // ─── STOP ─────────────────────────────────────────────────────────────────
   const stop = useCallback((): Promise<Blob> => {
     return new Promise((resolve) => {
 
+      pausedRef.current = false
       stopRecording()
 
       // Close WebSocket gracefully
@@ -218,8 +274,10 @@ export function useRecording() {
 
       if (recorder && recorder.state !== 'inactive') {
 
+        // If paused, resume briefly so onstop fires correctly
+        if (recorder.state === 'paused') recorder.resume()
+
         recorder.onstop = () => {
-          // Close AudioContext after recorder fully stops
           if (audioContextRef.current) {
             audioContextRef.current.close()
             audioContextRef.current = null
@@ -229,12 +287,7 @@ export function useRecording() {
           const blob = new Blob(audioChunksRef.current, {
             type: recorderMimeRef.current,
           })
-          console.log(
-            `[Recording] Stopped — chunks: ${audioChunksRef.current.length}, size: ${blob.size} bytes`
-          )
-          if (blob.size < 1000) {
-            console.warn('[Recording] Blob very small — mic may not have captured audio')
-          }
+          console.log(`[Recording] Stopped — chunks: ${audioChunksRef.current.length}, size: ${blob.size} bytes`)
 
           streamRef.current?.getTracks().forEach((t) => t.stop())
           streamRef.current = null
@@ -267,12 +320,11 @@ export function useRecording() {
       if (workletNodeRef.current) { workletNodeRef.current.disconnect(); workletNodeRef.current = null }
       if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null }
       streamRef.current?.getTracks().forEach((t) => t.stop())
-      if (mediaRecorderRef.current?.state !== 'inactive') {
-        mediaRecorderRef.current?.stop()
-      }
+      const rec = mediaRecorderRef.current
+      if (rec && rec.state !== 'inactive') rec.stop()
     }
   }, [])
 
 
-  return { isRecording, start, stop, analyser }
+  return { isRecording, isPaused, start, pause, resume, stop, analyser }
 }

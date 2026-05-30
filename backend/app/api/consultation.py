@@ -385,6 +385,37 @@ def export_consultation_report(
         }
     )
     
+@router.patch("/{consultation_id}/draft")
+def save_draft_transcription(
+    consultation_id: str,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(["admin", "practitioner"]))
+):
+    """
+    Auto-save endpoint — persists in-progress transcription every 30 seconds.
+    Accepts: { transcription_text: str, updated_at: str (ISO-8601) }
+    """
+    consultation = db.query(Consultation).filter(
+        Consultation.consultation_id == consultation_id,
+        Consultation.organization_id == current_user.organization_id
+    ).first()
+
+    if not consultation:
+        raise HTTPException(status_code=404, detail="Consultation not found")
+
+    consultation.transcription_text = data.get("transcription_text", consultation.transcription_text)
+    try:
+        consultation.updated_at = datetime.fromisoformat(
+            data["updated_at"].replace("Z", "+00:00")
+        ) if "updated_at" in data else datetime.now(timezone.utc)
+    except (ValueError, KeyError):
+        consultation.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    return {"status": "saved", "consultation_id": consultation_id}
+
+
 @router.put("/{consultation_id}")
 def update_consultation(
     consultation_id: str,

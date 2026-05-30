@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 interface ConsultationState {
   isRecording: boolean
+  isPaused: boolean
   transcript: string
   liveText: string        // live partial text during speech
   recSeconds: number
@@ -9,6 +10,8 @@ interface ConsultationState {
 
   startRecording: () => void
   stopRecording: () => void
+  pauseRecording: () => void
+  resumeRecording: () => void
 
   appendTranscript: (text: string) => void
   setLiveText: (text: string) => void
@@ -25,6 +28,8 @@ export const useConsultationStore =
 
     isRecording: false,
 
+    isPaused: false,
+
     transcript: '',
 
     liveText: '',
@@ -36,6 +41,7 @@ export const useConsultationStore =
     startRecording: () =>
       set({
         isRecording: true,
+        isPaused: false,
         transcript: '',
         liveText: '',
         recSeconds: 0
@@ -44,7 +50,21 @@ export const useConsultationStore =
     stopRecording: () =>
       set({
         isRecording: false,
+        isPaused: false,
         liveText: '',
+      }),
+
+    pauseRecording: () =>
+      set({
+        isRecording: false,
+        isPaused: true,
+        liveText: '',
+      }),
+
+    resumeRecording: () =>
+      set({
+        isRecording: true,
+        isPaused: false,
       }),
 
     appendTranscript: (text) =>
@@ -69,6 +89,7 @@ export const useConsultationStore =
     reset: () =>
       set({
         isRecording: false,
+        isPaused: false,
         transcript: '',
         liveText: '',
         recSeconds: 0,

@@ -1,14 +1,16 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { 
   Mic, MicOff, Upload, FileText, Printer, Save,
   RefreshCw, Trash2, ArrowRight, User, AlertCircle,
-  Volume2
+  Volume2, Pause, Play, WifiOff
 } from 'lucide-react'
 import { dictationApi } from '@/api/dictation'
 import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import { useDictationStore } from '@/store/dictationStore'
 import { apiClient } from '@/api/client'
+import { enqueue } from '@/lib/offlineQueue'
+import toast from 'react-hot-toast'
 
 // Extended window type for webkitSpeechRecognition
 declare global {
@@ -32,6 +34,8 @@ export default function DictationPage() {
 
   const [letterheadPreview, setLetterheadPreview] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [isProcessing, setIsProcessing] = useState(false)
   const [pdfGenerating, setPdfGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -41,13 +45,33 @@ export default function DictationPage() {
   // MediaRecorder refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const recordingMimeTypeRef = useRef('audio/webm')
+  const streamRef = useRef<MediaStream | null>(null)
   
   // AssemblyAI WebSocket + AudioWorklet refs
   const wsRef = useRef<WebSocket | null>(null)
   const workletNodeRef = useRef<AudioWorkletNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const sessionReadyRef = useRef(false)
+  const pausedRef = useRef(false)          // blocks PCM sends while paused
   const finalTranscriptRef = useRef('')
+
+  // Auto-save refs
+  const autoSaveIntervalRef = useRef<number | null>(null)
+  const lastSavedTranscriptRef = useRef('')
+
+  // Online/offline tracking
+  useEffect(() => {
+    const onOnline  = () => setIsOnline(true)
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online',  onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online',  onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [])
 
   // Fetch patients list for context
   const { data: patients } = useQuery({
@@ -76,6 +100,117 @@ export default function DictationPage() {
     setSaveSuccess(false)
   }
 
+  // ── Auto-save helpers ─────────────────────────────────────────────────────
+  const doAutoSave = useCallback(async () => {
+    const current = useDictationStore.getState().transcript
+    if (!current || current === lastSavedTranscriptRef.current) return
+
+    const payload = { transcription_text: current, updated_at: new Date().toISOString() }
+
+    if (!navigator.onLine) {
+      await enqueue({ consultationId: 'dictation-draft', transcriptionText: current, updatedAt: new Date().toISOString() })
+      return
+    }
+    try {
+      // Persist to localStorage as a simple draft (dictation has no consultation_id)
+      localStorage.setItem('dictation_draft_transcript', current)
+      localStorage.setItem('dictation_draft_saved_at', payload.updated_at)
+      lastSavedTranscriptRef.current = current
+      console.log('[DictationAutoSave] Draft saved to localStorage')
+    } catch (err) {
+      console.warn('[DictationAutoSave] Save failed:', err)
+      toast.error('Auto-save failed', { id: 'dictation-autosave-fail' })
+    }
+  }, [])
+
+  const startAutoSave = useCallback(() => {
+    if (autoSaveIntervalRef.current) return
+    autoSaveIntervalRef.current = window.setInterval(doAutoSave, 30_000)
+  }, [doAutoSave])
+
+  const stopAutoSave = useCallback(async (finalSave = true) => {
+    if (autoSaveIntervalRef.current) {
+      window.clearInterval(autoSaveIntervalRef.current)
+      autoSaveIntervalRef.current = null
+    }
+    if (finalSave) await doAutoSave()
+  }, [doAutoSave])
+
+  // ── AssemblyAI session setup ───────────────────────────────────────────────
+  const connectAssemblyAI = useCallback(async (
+    audioContext: AudioContext,
+    source: MediaStreamAudioSourceNode
+  ) => {
+    const { data } = await apiClient.get('/speech/assemblyai-token')
+    const token = data.token
+
+    const wsUrl =
+      `wss://streaming.assemblyai.com/v3/ws` +
+      `?sample_rate=16000` +
+      `&speech_model=universal-streaming-english` +
+      `&format_turns=true` +
+      `&token=${token}`
+
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onopen = () => console.log('[AssemblyAI] WebSocket connected (v3)')
+
+    ws.onmessage = (message) => {
+      let res: any
+      try { res = JSON.parse(message.data) } catch { return }
+
+      if (res.error) {
+        console.error('[AssemblyAI] Error:', res.error)
+        setStatusText('Live transcription error: ' + res.error)
+        return
+      }
+
+      if (res.type === 'Begin') {
+        console.log('[AssemblyAI] Session ready — id:', res.id)
+        sessionReadyRef.current = true
+        return
+      }
+
+      if (res.type === 'Turn') {
+        const turnText: string = res.transcript || ''
+        if (!res.end_of_turn) {
+          setRealtimeText(turnText)
+        } else if (turnText) {
+          finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
+          setTranscript(finalTranscriptRef.current)
+          setRealtimeText('')
+        }
+      }
+    }
+
+    ws.onerror = () => console.error('[AssemblyAI] WebSocket error')
+
+    ws.onclose = (evt) => {
+      console.log('[AssemblyAI] WebSocket closed', evt.code, evt.reason)
+      wsRef.current = null
+      sessionReadyRef.current = false
+    }
+
+    // AudioWorklet PCM pipeline
+    await audioContext.audioWorklet.addModule('/pcm-processor.js')
+    const worklet = new AudioWorkletNode(audioContext, 'pcm-processor')
+    workletNodeRef.current = worklet
+
+    worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
+      if (
+        pausedRef.current ||
+        !wsRef.current ||
+        wsRef.current.readyState !== WebSocket.OPEN ||
+        !sessionReadyRef.current
+      ) return
+      wsRef.current.send(e.data)
+    }
+
+    source.connect(worklet)
+    worklet.connect(audioContext.destination)
+  }, [setRealtimeText, setTranscript, setStatusText])
+
   // Initialize Speech Recognition for Real-time Display
   // Native SpeechRecognition is removed due to Chromium Electron network errors.
 
@@ -85,85 +220,21 @@ export default function DictationPage() {
     setRealtimeText('')
     audioChunksRef.current = []
     finalTranscriptRef.current = useDictationStore.getState().transcript || ''
+    lastSavedTranscriptRef.current = finalTranscriptRef.current
+    pausedRef.current = false
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      
+      streamRef.current = stream
+
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 })
       audioContextRef.current = audioContext
       const source = audioContext.createMediaStreamSource(stream)
+      sourceRef.current = source
 
-      // AssemblyAI Real-Time WebSocket (v3 streaming API)
+      // AssemblyAI WebSocket + AudioWorklet
       try {
-        const { data } = await apiClient.get('/speech/assemblyai-token')
-        const token = data.token
-
-        const wsUrl =
-          `wss://streaming.assemblyai.com/v3/ws` +
-          `?sample_rate=16000` +
-          `&speech_model=universal-streaming-english` +
-          `&format_turns=true` +
-          `&token=${token}`
-
-        const ws = new WebSocket(wsUrl)
-        wsRef.current = ws
-
-        ws.onopen = () => console.log('[AssemblyAI] WebSocket connected (v3)')
-
-        ws.onmessage = (message) => {
-          let res: any
-          try { res = JSON.parse(message.data) } catch { return }
-
-          if (res.error) {
-            console.error('[AssemblyAI] Error:', res.error)
-            setStatusText('Live transcription error: ' + res.error)
-            return
-          }
-
-          if (res.type === 'Begin') {
-            console.log('[AssemblyAI] Session ready — id:', res.id)
-            sessionReadyRef.current = true
-            return
-          }
-
-          if (res.type === 'Turn') {
-            const turnText: string = res.transcript || ''
-            if (!res.end_of_turn) {
-              setRealtimeText(turnText)
-            } else if (turnText) {
-              finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
-              setTranscript(finalTranscriptRef.current)
-              setRealtimeText('')
-            }
-          }
-        }
-
-        ws.onerror = () => console.error('[AssemblyAI] WebSocket error')
-
-        ws.onclose = (evt) => {
-          console.log('[AssemblyAI] WebSocket closed', evt.code, evt.reason)
-          wsRef.current = null
-          sessionReadyRef.current = false
-        }
-
-        // AudioWorklet — modern replacement for deprecated ScriptProcessorNode
-        await audioContext.audioWorklet.addModule('/pcm-processor.js')
-        const worklet = new AudioWorkletNode(audioContext, 'pcm-processor')
-        workletNodeRef.current = worklet
-
-        worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
-          if (
-            wsRef.current &&
-            wsRef.current.readyState === WebSocket.OPEN &&
-            sessionReadyRef.current
-          ) {
-            wsRef.current.send(e.data)
-          }
-        }
-
-        source.connect(worklet)
-        worklet.connect(audioContext.destination)
-
+        await connectAssemblyAI(audioContext, source)
       } catch (err: any) {
         console.warn('[Recording] Could not start AssemblyAI:', err)
         setStatusText('Live transcription unavailable: ' + (err.response?.data?.detail || err.message))
@@ -181,13 +252,11 @@ export default function DictationPage() {
         ? new MediaRecorder(stream, { mimeType: preferredMimeType })
         : new MediaRecorder(stream)
 
-      const recordingMimeType = mediaRecorder.mimeType || preferredMimeType || 'audio/webm'
+      recordingMimeTypeRef.current = mediaRecorder.mimeType || preferredMimeType || 'audio/webm'
       mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data)
       }
 
       mediaRecorder.onstop = async () => {
@@ -195,15 +264,17 @@ export default function DictationPage() {
           audioContextRef.current.close()
           audioContextRef.current = null
         }
-        const audioBlob = new Blob(audioChunksRef.current, { type: recordingMimeType })
-        stream.getTracks().forEach(track => track.stop())
+        const audioBlob = new Blob(audioChunksRef.current, { type: recordingMimeTypeRef.current })
+        streamRef.current?.getTracks().forEach(track => track.stop())
+        streamRef.current = null
         await processAudio(audioBlob)
       }
 
-      // Start recording
-      mediaRecorder.start(250) // capture chunks every 250ms
+      mediaRecorder.start(250)
       setIsRecording(true)
+      setIsPaused(false)
       setStatusText('Listening actively... speak now.')
+      startAutoSave()
 
     } catch (err: any) {
       console.error('Failed to get media devices', err)
@@ -213,25 +284,84 @@ export default function DictationPage() {
   }
 
   // Stop recording
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-      setStatusText('Recording stopped. Processing audio...')
+  const stopRecording = async () => {
+    if (!mediaRecorderRef.current) return
 
-      if (wsRef.current) {
-        if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: 'Terminate' }))  // v3 format
-        }
-        wsRef.current.close()
-        wsRef.current = null
-        sessionReadyRef.current = false
+    await stopAutoSave(true)  // final save before stopping
+
+    setIsRecording(false)
+    setIsPaused(false)
+    setStatusText('Recording stopped. Processing audio...')
+
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'Terminate' }))
       }
-      if (workletNodeRef.current) {
-        workletNodeRef.current.disconnect()
-        workletNodeRef.current = null
+      wsRef.current.close()
+      wsRef.current = null
+      sessionReadyRef.current = false
+    }
+    if (workletNodeRef.current) {
+      workletNodeRef.current.disconnect()
+      workletNodeRef.current = null
+    }
+
+    // If paused, resume briefly so onstop fires
+    if (mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume()
+    }
+    if (mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop()
+    }
+  }
+
+  // Pause recording
+  const pauseRecording = async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return
+
+    pausedRef.current = true
+    mediaRecorderRef.current.pause()
+
+    // Terminate AssemblyAI session while paused
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'Terminate' }))
+      wsRef.current.close()
+      wsRef.current = null
+      sessionReadyRef.current = false
+    }
+
+    setIsRecording(false)
+    setIsPaused(true)
+    setStatusText('Recording paused. Click Resume to continue.')
+    await stopAutoSave(true)  // save current transcript on pause
+  }
+
+  // Resume recording
+  const resumeRecording = async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'paused') return
+
+    pausedRef.current = false
+    mediaRecorderRef.current.resume()
+
+    // Re-establish AssemblyAI session
+    if (audioContextRef.current && streamRef.current) {
+      try {
+        const source = audioContextRef.current.createMediaStreamSource(streamRef.current)
+        if (workletNodeRef.current) {
+          workletNodeRef.current.disconnect()
+          workletNodeRef.current = null
+        }
+        await connectAssemblyAI(audioContextRef.current, source)
+      } catch (err: any) {
+        console.warn('[Recording] AssemblyAI reconnect failed:', err)
+        setStatusText('Live transcription reconnect failed — audio still recording.')
       }
     }
+
+    setIsRecording(true)
+    setIsPaused(false)
+    setStatusText('Listening actively... speak now.')
+    startAutoSave()
   }
 
   // Process the final audio blob
@@ -404,19 +534,31 @@ export default function DictationPage() {
               2. Clinical Dictation
             </h3>
 
+            {/* Offline banner */}
+            {!isOnline && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 14px', background: '#fef3c7', color: '#92400e',
+                borderRadius: 8, fontSize: 12, marginBottom: 16, border: '1px solid #fcd34d',
+              }}>
+                <WifiOff size={14} />
+                No internet — transcript is being saved locally and will sync when you're back online.
+              </div>
+            )}
+
             {/* Glowing recording microphone */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '20px 0', gap: 12 }}>
               <button
-                onClick={isRecording ? stopRecording : startRecording}
+                onClick={isRecording ? stopRecording : (isPaused ? stopRecording : startRecording)}
                 disabled={isProcessing}
                 className={`icon-box-premium ${isRecording ? 'recording' : ''}`}
                 style={{
                   width: 72,
                   height: 72,
                   borderRadius: '50%',
-                  color: isRecording ? '#fff' : 'var(--teal)',
-                  background: isRecording ? 'var(--grad-rose)' : 'var(--teal-light)',
-                  border: isRecording ? 'none' : '2px solid var(--teal)',
+                  color: isRecording ? '#fff' : isPaused ? '#fff' : 'var(--teal)',
+                  background: isRecording ? 'var(--grad-rose)' : isPaused ? '#f59e0b' : 'var(--teal-light)',
+                  border: (isRecording || isPaused) ? 'none' : '2px solid var(--teal)',
                   cursor: 'pointer',
                   boxShadow: isRecording ? '0 0 20px rgba(244, 63, 94, 0.4)' : 'var(--shadow-sm)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -425,21 +567,76 @@ export default function DictationPage() {
                   justifyContent: 'center',
                 }}
               >
-                {isRecording ? <MicOff size={28} /> : <Mic size={28} />}
+                {isRecording ? <MicOff size={28} /> : isPaused ? <MicOff size={28} /> : <Mic size={28} />}
               </button>
 
               <div style={{ textAlign: 'center' }}>
-                <span className={`badge ${isRecording ? 'badge-red animate-pulse' : 'badge-teal'}`} style={{ fontSize: 12, padding: '4px 12px' }}>
-                  {isRecording ? '● Live Recording Active' : 'Microphone Idle'}
+                <span
+                  className={`badge ${isRecording ? 'badge-red animate-pulse' : isPaused ? '' : 'badge-teal'}`}
+                  style={{
+                    fontSize: 12, padding: '4px 12px',
+                    background: isPaused ? '#f59e0b' : undefined,
+                    color: isPaused ? '#fff' : undefined,
+                  }}
+                >
+                  {isRecording ? '● Live Recording Active' : isPaused ? '⏸ Paused' : 'Microphone Idle'}
                 </span>
                 <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8, maxWidth: 320 }}>
                   {statusText}
                 </p>
               </div>
+
+              {/* Pause / Resume controls */}
+              {(isRecording || isPaused) && (
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  {isRecording && (
+                    <button
+                      onClick={pauseRecording}
+                      disabled={isProcessing}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 18px', background: '#f59e0b', color: '#fff',
+                        border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Pause size={14} /> Pause
+                    </button>
+                  )}
+                  {isPaused && (
+                    <button
+                      onClick={resumeRecording}
+                      disabled={isProcessing}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 18px', background: '#10b981', color: '#fff',
+                        border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Play size={14} /> Resume
+                    </button>
+                  )}
+                  {isPaused && (
+                    <button
+                      onClick={stopRecording}
+                      disabled={isProcessing}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 18px', background: '#e74c3c', color: '#fff',
+                        border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <MicOff size={14} /> Stop
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Real-time Subtitles / Live speech display */}
-            {(realtimeText || isRecording) && (
+            {(realtimeText || isRecording || isPaused) && (
               <div style={{
                 background: 'rgba(255, 239, 239, 0.4)',
                 border: '1px solid rgba(244, 63, 94, 0.2)',
@@ -450,6 +647,11 @@ export default function DictationPage() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--rose)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                   <span className="pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--rose)' }} />
                   Live Caption Feed:
+                  {(isRecording || isPaused) && (
+                    <span style={{ marginLeft: 'auto', fontWeight: 400, color: 'var(--text-4)', fontSize: 10 }}>
+                      Auto-saving every 30s
+                    </span>
+                  )}
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--text-1)', fontStyle: 'italic', margin: 0 }}>
                   {realtimeText || 'Speaking out to listen...'}
@@ -495,7 +697,7 @@ export default function DictationPage() {
             )}
 
             {/* Action submit button */}
-            {transcript && !isRecording && (
+            {transcript && !isRecording && !isPaused && (
               <button
                 disabled={isProcessing}
                 onClick={async () => {
