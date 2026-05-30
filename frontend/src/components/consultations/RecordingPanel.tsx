@@ -43,6 +43,7 @@ export default function RecordingPanel({
   const {
     recSeconds,
     transcript,
+    liveText,
     appendTranscript
   } = useConsultationStore()
 
@@ -301,7 +302,7 @@ export default function RecordingPanel({
             padding: 18,
             marginBottom: 24,
             minHeight: 120,
-            maxHeight: 180,
+            maxHeight: 220,
             overflowY: 'auto',
             fontSize: 14,
             lineHeight: 1.6,
@@ -309,9 +310,20 @@ export default function RecordingPanel({
           }}
         >
 
-          {transcript ? (
+          {(transcript || liveText) ? (
 
-            <div>{transcript}</div>
+            <div>
+              {/* Committed turns */}
+              {transcript && (
+                <span>{transcript}</span>
+              )}
+              {/* Live partial — shown in a muted colour while still forming */}
+              {liveText && (
+                <span style={{ color: 'var(--text-4)', fontStyle: 'italic' }}>
+                  {transcript ? ' ' : ''}{liveText}
+                </span>
+              )}
+            </div>
 
           ) : (
 

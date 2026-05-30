@@ -1,7 +1,9 @@
 from app.core.speech import transcribe_audio
+import asyncio
 
 class TranscriptionService:
     @staticmethod
     async def transcribe(audio_content: bytes):
-        # This calls the existing core logic for Azure integration
-        return await transcribe_audio(audio_content)
+        # transcribe_audio is synchronous — run it in a thread pool to avoid blocking the event loop
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, transcribe_audio, audio_content)

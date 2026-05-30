@@ -42,9 +42,9 @@ export default function DictationPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   
-  // AssemblyAI WebSockets refs
+  // AssemblyAI WebSocket + AudioWorklet refs
   const wsRef = useRef<WebSocket | null>(null)
-  const audioProcessorRef = useRef<ScriptProcessorNode | null>(null)
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const sessionReadyRef = useRef(false)
   const finalTranscriptRef = useRef('')
@@ -93,81 +93,95 @@ export default function DictationPage() {
       audioContextRef.current = audioContext
       const source = audioContext.createMediaStreamSource(stream)
 
-      // AssemblyAI Real-Time WebSocket
+      // AssemblyAI Real-Time WebSocket (v3 streaming API)
       try {
         const { data } = await apiClient.get('/speech/assemblyai-token')
         const token = data.token
 
-        const ws = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`)
+        const wsUrl =
+          `wss://streaming.assemblyai.com/v3/ws` +
+          `?sample_rate=16000` +
+          `&speech_model=universal-streaming-english` +
+          `&format_turns=true` +
+          `&token=${token}`
+
+        const ws = new WebSocket(wsUrl)
         wsRef.current = ws
 
-        ws.onopen = () => console.log('[AssemblyAI] WebSocket opened')
-        
+        ws.onopen = () => console.log('[AssemblyAI] WebSocket connected (v3)')
+
         ws.onmessage = (message) => {
-          const res = JSON.parse(message.data)
-          
+          let res: any
+          try { res = JSON.parse(message.data) } catch { return }
+
           if (res.error) {
             console.error('[AssemblyAI] Error:', res.error)
             setStatusText('Live transcription error: ' + res.error)
             return
           }
 
-          if (res.message_type === 'SessionBegins') {
+          if (res.type === 'Begin') {
+            console.log('[AssemblyAI] Session ready — id:', res.id)
             sessionReadyRef.current = true
             return
           }
 
-          if (res.message_type === 'PartialTranscript') {
-            setRealtimeText(res.text)
-          } else if (res.message_type === 'FinalTranscript') {
-            finalTranscriptRef.current = `${finalTranscriptRef.current} ${res.text}`.trim()
-            setTranscript(finalTranscriptRef.current)
-            setRealtimeText('')
+          if (res.type === 'Turn') {
+            const turnText: string = res.transcript || ''
+            if (!res.end_of_turn) {
+              setRealtimeText(turnText)
+            } else if (turnText) {
+              finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
+              setTranscript(finalTranscriptRef.current)
+              setRealtimeText('')
+            }
           }
         }
 
-        ws.onerror = (error) => console.error('[AssemblyAI] WebSocket error:', error)
+        ws.onerror = () => console.error('[AssemblyAI] WebSocket error')
 
-        ws.onclose = () => {
+        ws.onclose = (evt) => {
+          console.log('[AssemblyAI] WebSocket closed', evt.code, evt.reason)
           wsRef.current = null
           sessionReadyRef.current = false
         }
 
-        const processor = audioContext.createScriptProcessor(4096, 1, 1)
-        audioProcessorRef.current = processor
-        
-        processor.onaudioprocess = (e) => {
-          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !sessionReadyRef.current) return
-          
-          const channelData = e.inputBuffer.getChannelData(0)
-          const pcm16 = new Int16Array(channelData.length)
-          for (let i = 0; i < channelData.length; i++) {
-            pcm16[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF
+        // AudioWorklet — modern replacement for deprecated ScriptProcessorNode
+        await audioContext.audioWorklet.addModule('/pcm-processor.js')
+        const worklet = new AudioWorkletNode(audioContext, 'pcm-processor')
+        workletNodeRef.current = worklet
+
+        worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
+          if (
+            wsRef.current &&
+            wsRef.current.readyState === WebSocket.OPEN &&
+            sessionReadyRef.current
+          ) {
+            wsRef.current.send(e.data)
           }
-          
-          const uint8 = new Uint8Array(pcm16.buffer)
-          let binary = ''
-          for (let i = 0; i < uint8.byteLength; i++) {
-            binary += String.fromCharCode(uint8[i])
-          }
-          const base64 = btoa(binary)
-          
-          wsRef.current.send(JSON.stringify({ audio_data: base64 }))
         }
-        
-        const gainNode = audioContext.createGain()
-        gainNode.gain.value = 0
-        source.connect(processor)
-        processor.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        
+
+        source.connect(worklet)
+        worklet.connect(audioContext.destination)
+
       } catch (err: any) {
         console.warn('[Recording] Could not start AssemblyAI:', err)
         setStatusText('Live transcription unavailable: ' + (err.response?.data?.detail || err.message))
       }
 
-      // Setup audio recording
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      // Setup audio recording — pick the best supported MIME type
+      const preferredMimeType = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus',
+      ].find((type) => MediaRecorder.isTypeSupported(type))
+
+      const mediaRecorder = preferredMimeType
+        ? new MediaRecorder(stream, { mimeType: preferredMimeType })
+        : new MediaRecorder(stream)
+
+      const recordingMimeType = mediaRecorder.mimeType || preferredMimeType || 'audio/webm'
       mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = (event) => {
@@ -181,7 +195,7 @@ export default function DictationPage() {
           audioContextRef.current.close()
           audioContextRef.current = null
         }
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const audioBlob = new Blob(audioChunksRef.current, { type: recordingMimeType })
         stream.getTracks().forEach(track => track.stop())
         await processAudio(audioBlob)
       }
@@ -207,15 +221,15 @@ export default function DictationPage() {
 
       if (wsRef.current) {
         if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ terminate_session: true }))
+          wsRef.current.send(JSON.stringify({ type: 'Terminate' }))  // v3 format
         }
         wsRef.current.close()
         wsRef.current = null
         sessionReadyRef.current = false
       }
-      if (audioProcessorRef.current) {
-        audioProcessorRef.current.disconnect()
-        audioProcessorRef.current = null
+      if (workletNodeRef.current) {
+        workletNodeRef.current.disconnect()
+        workletNodeRef.current = null
       }
     }
   }
