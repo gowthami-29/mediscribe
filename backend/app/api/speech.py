@@ -63,9 +63,9 @@ def get_assemblyai_token():
         "content-type": "application/json"
     }
 
-    response = requests.post(
-        "https://api.assemblyai.com/v2/realtime/token",
-        json={"expires_in": 3600},
+    response = requests.get(
+        "https://streaming.assemblyai.com/v3/token",
+        params={"expires_in_seconds": 600},
         headers=headers
     )
 

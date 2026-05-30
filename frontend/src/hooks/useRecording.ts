@@ -92,7 +92,7 @@ export function useRecording() {
         const { data } = await apiClient.get('/speech/assemblyai-token')
         const token = data.token
 
-        const ws = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`)
+        const ws = new WebSocket(`wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&token=${token}`)
         wsRef.current = ws
 
         ws.onopen = () => {
@@ -108,17 +108,20 @@ export function useRecording() {
             return
           }
 
-          if (res.message_type === 'SessionBegins') {
+          if (res.message_type === 'SessionBegins' || res.message_type === 'Begin') {
             console.log('[AssemblyAI] Session ready')
             sessionReadyRef.current = true
             return
           }
 
-          if (res.message_type === 'PartialTranscript') {
-            appendTranscript(`${finalTranscriptRef.current} ${res.text}`.trim())
-          } else if (res.message_type === 'FinalTranscript') {
-            finalTranscriptRef.current = `${finalTranscriptRef.current} ${res.text}`.trim()
-            appendTranscript(finalTranscriptRef.current)
+          if (res.message_type === 'Turn') {
+            const turnText = res.transcript || res.text || ''
+            if (!res.end_of_turn) {
+              appendTranscript(`${finalTranscriptRef.current} ${turnText}`.trim())
+            } else {
+              finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
+              appendTranscript(finalTranscriptRef.current)
+            }
           }
         }
 
@@ -146,14 +149,8 @@ export function useRecording() {
             pcm16[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF
           }
           
-          const uint8 = new Uint8Array(pcm16.buffer)
-          let binary = ''
-          for (let i = 0; i < uint8.byteLength; i++) {
-            binary += String.fromCharCode(uint8[i])
-          }
-          const base64 = btoa(binary)
-          
-          wsRef.current.send(JSON.stringify({ audio_data: base64 }))
+          // AssemblyAI v3 expects raw binary audio data (pcm_s16le)
+          wsRef.current.send(pcm16.buffer)
         }
         
         // Prevent audio feedback loop (echo)

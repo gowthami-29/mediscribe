@@ -9,7 +9,7 @@ from app.models.report import Report
 import hashlib
 from app.services.audit_service import audit_service
 from app.services.report_service import ReportService
-from app.db.database import SessionLocal
+from app.db.session import SessionLocal
 
 class ConsultationService:
     @staticmethod
@@ -130,7 +130,6 @@ class ConsultationService:
             if not consultation:
                 return None
 
-        try:
 
             # Save audio path (will be updated to B2 key after upload)
             consultation.audio_file_id = audio_file_path
