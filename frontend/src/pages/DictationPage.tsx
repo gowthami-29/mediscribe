@@ -93,15 +93,18 @@ export default function DictationPage() {
       audioContextRef.current = audioContext
       const source = audioContext.createMediaStreamSource(stream)
 
-      // AssemblyAI Real-Time WebSocket
+      // AssemblyAI Real-Time WebSocket (v3 streaming API)
       try {
         const { data } = await apiClient.get('/speech/assemblyai-token')
         const token = data.token
 
-        const ws = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`)
+        // Use AssemblyAI v3 streaming endpoint — matches the token issued by the backend
+        // speech_model is required by v3 (no default); using universal-streaming-english for medical dictation
+        // format_turns=true enables punctuation/casing for human-readable display
+        const ws = new WebSocket(`wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&speech_model=universal-streaming-english&format_turns=true&token=${token}`)
         wsRef.current = ws
 
-        ws.onopen = () => console.log('[AssemblyAI] WebSocket opened')
+        ws.onopen = () => console.log('[AssemblyAI] WebSocket opened (v3)')
         
         ws.onmessage = (message) => {
           const res = JSON.parse(message.data)
@@ -112,23 +115,35 @@ export default function DictationPage() {
             return
           }
 
-          if (res.message_type === 'SessionBegins') {
+          // v3 session start — field is "type", not "message_type"
+          if (res.type === 'Begin') {
+            console.log('[AssemblyAI] Session ready (v3)')
             sessionReadyRef.current = true
             return
           }
 
-          if (res.message_type === 'PartialTranscript') {
-            setRealtimeText(res.text)
-          } else if (res.message_type === 'FinalTranscript') {
-            finalTranscriptRef.current = `${finalTranscriptRef.current} ${res.text}`.trim()
-            setTranscript(finalTranscriptRef.current)
-            setRealtimeText('')
+          // v3 Turn messages: transcript accumulates words progressively within a turn.
+          // end_of_turn=false → partial (live caption), end_of_turn=true → turn complete.
+          if (res.type === 'Turn') {
+            const turnText: string = res.transcript || ''
+            if (!res.end_of_turn) {
+              // Partial — show the growing transcript as live caption
+              setRealtimeText(turnText)
+            } else {
+              // Turn complete — append to the committed transcript, clear live caption
+              if (turnText) {
+                finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
+                setTranscript(finalTranscriptRef.current)
+              }
+              setRealtimeText('')
+            }
           }
         }
 
         ws.onerror = (error) => console.error('[AssemblyAI] WebSocket error:', error)
 
         ws.onclose = () => {
+          console.log('[AssemblyAI] WebSocket closed')
           wsRef.current = null
           sessionReadyRef.current = false
         }
@@ -145,14 +160,8 @@ export default function DictationPage() {
             pcm16[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF
           }
           
-          const uint8 = new Uint8Array(pcm16.buffer)
-          let binary = ''
-          for (let i = 0; i < uint8.byteLength; i++) {
-            binary += String.fromCharCode(uint8[i])
-          }
-          const base64 = btoa(binary)
-          
-          wsRef.current.send(JSON.stringify({ audio_data: base64 }))
+          // v3 expects raw binary PCM16 (not base64 JSON like v2)
+          wsRef.current.send(pcm16.buffer)
         }
         
         const gainNode = audioContext.createGain()
@@ -166,8 +175,19 @@ export default function DictationPage() {
         setStatusText('Live transcription unavailable: ' + (err.response?.data?.detail || err.message))
       }
 
-      // Setup audio recording
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      // Setup audio recording — pick the best supported MIME type
+      const preferredMimeType = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus',
+      ].find((type) => MediaRecorder.isTypeSupported(type))
+
+      const mediaRecorder = preferredMimeType
+        ? new MediaRecorder(stream, { mimeType: preferredMimeType })
+        : new MediaRecorder(stream)
+
+      const recordingMimeType = mediaRecorder.mimeType || preferredMimeType || 'audio/webm'
       mediaRecorderRef.current = mediaRecorder
 
       mediaRecorder.ondataavailable = (event) => {
@@ -181,7 +201,7 @@ export default function DictationPage() {
           audioContextRef.current.close()
           audioContextRef.current = null
         }
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const audioBlob = new Blob(audioChunksRef.current, { type: recordingMimeType })
         stream.getTracks().forEach(track => track.stop())
         await processAudio(audioBlob)
       }
@@ -207,7 +227,7 @@ export default function DictationPage() {
 
       if (wsRef.current) {
         if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ terminate_session: true }))
+          wsRef.current.send(JSON.stringify({ type: 'Terminate' }))  // v3 format
         }
         wsRef.current.close()
         wsRef.current = null

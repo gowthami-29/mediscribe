@@ -17,6 +17,7 @@ export function useRecording() {
     startRecording,
     stopRecording,
     appendTranscript,
+    setLiveText,
     tick,
   } = useConsultationStore()
 
@@ -92,7 +93,7 @@ export function useRecording() {
         const { data } = await apiClient.get('/speech/assemblyai-token')
         const token = data.token
 
-        const ws = new WebSocket(`wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&token=${token}`)
+        const ws = new WebSocket(`wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&speech_model=universal-streaming-english&format_turns=true&token=${token}`)
         wsRef.current = ws
 
         ws.onopen = () => {
@@ -108,19 +109,25 @@ export function useRecording() {
             return
           }
 
-          if (res.message_type === 'SessionBegins' || res.message_type === 'Begin') {
-            console.log('[AssemblyAI] Session ready')
+          // v3 session start — field is "type", not "message_type"
+          if (res.type === 'Begin') {
+            console.log('[AssemblyAI] Session ready (v3)')
             sessionReadyRef.current = true
             return
           }
 
-          if (res.message_type === 'Turn') {
-            const turnText = res.transcript || res.text || ''
+          // v3 Turn messages: transcript accumulates words progressively within a turn.
+          // end_of_turn=false → partial (live preview), end_of_turn=true → turn complete.
+          if (res.type === 'Turn') {
+            const turnText: string = res.transcript || ''
             if (!res.end_of_turn) {
-              appendTranscript(`${finalTranscriptRef.current} ${turnText}`.trim())
-            } else {
+              // Partial — show the growing text as live caption
+              setLiveText(turnText)
+            } else if (turnText) {
+              // Turn complete — commit to the permanent transcript, clear live caption
               finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
               appendTranscript(finalTranscriptRef.current)
+              // appendTranscript already clears liveText via the store action
             }
           }
         }
@@ -201,7 +208,7 @@ export function useRecording() {
       toast.error('Could not access microphone')
     }
 
-  }, [appendTranscript, startRecording, tick])
+  }, [appendTranscript, setLiveText, startRecording, tick])
 
 
   // STOP RECORDING — returns the audio Blob
@@ -211,9 +218,9 @@ export function useRecording() {
 
       stopRecording()
       if (wsRef.current) {
-        // Send termination message and close
+        // Send termination message and close (v3 format)
         if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ terminate_session: true }))
+          wsRef.current.send(JSON.stringify({ type: 'Terminate' }))
         }
         wsRef.current.close()
         wsRef.current = null
