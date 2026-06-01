@@ -105,7 +105,7 @@ export interface CreatePatientPayload {
 }
 
 // ─── Consultation ─────────────────────────────────────────────────────────────
-export type ConsultationStatus = 'scheduled' | 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+export type ConsultationStatus = 'scheduled' | 'pending' | 'in_progress' | 'processing' | 'completed' | 'failed' | 'failed_soap' | 'failed_transcription' | 'cancelled'
 export type TranscriptionStatus = 'pending' | 'in_progress' | 'completed' | 'failed'
 
 export interface Consultation {

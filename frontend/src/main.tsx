@@ -5,7 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { initSyncManager } from '@/lib/syncManager'
 import './styles/globals.css'
+
+// Start offline queue sync manager — flushes queued saves when connectivity restores
+initSyncManager()
 
 const queryClient = new QueryClient({
   defaultOptions: {

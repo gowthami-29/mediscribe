@@ -4,6 +4,9 @@ import uuid
 from fastapi import APIRouter, UploadFile, File
 
 from app.core.speech import transcribe_audio
+from app.core.config import settings
+import requests
+from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -45,3 +48,28 @@ async def transcribe(file: UploadFile = File(...)):
                 os.remove(local_path)
             except Exception:
                 pass
+
+@router.get("/assemblyai-token")
+def get_assemblyai_token():
+    """
+    Generates a temporary token for the frontend to connect directly
+    to AssemblyAI's Real-Time WebSocket without exposing our API key.
+    """
+    if not settings.ASSEMBLYAI_API_KEY:
+        raise HTTPException(status_code=500, detail="AssemblyAI API Key not configured")
+
+    headers = {
+        "authorization": settings.ASSEMBLYAI_API_KEY,
+        "content-type": "application/json"
+    }
+
+    response = requests.get(
+        "https://streaming.assemblyai.com/v3/token",
+        params={"expires_in_seconds": 600},
+        headers=headers
+    )
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise HTTPException(status_code=response.status_code, detail="Failed to get temporary token")

@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { consultationsApi } from '@/api/consultations'
 import { patientsApi } from '@/api/patients'
-import { Plus, Mic, StopCircle, Stethoscope, Calendar, Clock, Edit2, Trash2, RefreshCw, Sparkles } from 'lucide-react'
+import { Plus, Mic, Stethoscope, Calendar, Clock, Edit2, Trash2, RefreshCw, Sparkles } from 'lucide-react'
 import { format } from 'date-fns'
 import Modal from '@/components/shared/Modal'
 import ConsultationForm from './ConsultationForm'
 import RecordingPanel from './RecordingPanel'
 import SOAPEditor from '@/components/soap/SOAPEditor'
 import toast from 'react-hot-toast'
+import { useConsultationStore } from '@/store/consultationStore'
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; border: string; label: string }> = {
   completed:   { color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', label: 'Completed' },
@@ -267,13 +268,13 @@ export default function ConsultationList() {
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '6px 14px', borderRadius: 8, cursor: 'pointer',
-                                background: '#e11d48', color: '#fff',
+                                background: '#2563eb', color: '#fff',
                                 border: 'none', fontSize: 12, fontWeight: 600,
                                 transition: 'all 0.15s',
-                                boxShadow: '0 2px 4px rgba(225, 29, 72, 0.2)'
+                                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
                               }}
                             >
-                              <StopCircle size={12} /> Resume
+                              <Mic size={12} /> Resume Session
                             </button>
                           )}
   
@@ -386,7 +387,16 @@ export default function ConsultationList() {
       </Modal>
 
       {activeId && (
-        <Modal open={!!activeId} onClose={() => setActiveId(null)} title="Active Recording Session" width={700}>
+        <Modal
+          open={!!activeId}
+          onClose={() => {
+            // Reset paused state when modal closes — stream is dead after close
+            useConsultationStore.getState().reset()
+            setActiveId(null)
+          }}
+          title="Active Recording Session"
+          width={700}
+        >
           <RecordingPanel
             consultationId={activeId}
             onComplete={() => { setActiveId(null); qc.invalidateQueries({ queryKey: ['consultations'] }) }}
