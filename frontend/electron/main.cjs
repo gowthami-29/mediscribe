@@ -8,6 +8,8 @@ function createWindow() {
     title: 'ArogyaScribe'
   });
 
+  win.maximize();
+
   win.loadURL('https://mediscribe-kohl.vercel.app');
 }
 
