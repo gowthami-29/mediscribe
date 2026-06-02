@@ -5,6 +5,8 @@ import {
   Volume2, Pause, Play, WifiOff
 } from 'lucide-react'
 import { dictationApi } from '@/api/dictation'
+import { saveOfflineRecording }from '@/offline/offlineStorage'
+import {getOfflineRecordings,clearOfflineRecordings} from '@/offline/offlineStorage'
 import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import { useDictationStore } from '@/store/dictationStore'
@@ -72,6 +74,38 @@ export default function DictationPage() {
       window.removeEventListener('offline', onOffline)
     }
   }, [])
+  useEffect(() => {
+
+  const syncPending = async () => {
+
+    const pending = getOfflineRecordings()
+
+    if (pending.length > 0) {
+
+      console.log(
+        `Found ${pending.length} pending recordings`
+      )
+
+      toast.success(
+        `${pending.length} recordings ready to sync`
+      )
+
+      clearOfflineRecordings()
+    }
+  }
+
+  window.addEventListener(
+    'online',
+    syncPending
+  )
+
+  return () =>
+    window.removeEventListener(
+      'online',
+      syncPending
+    )
+
+}, [])
 
   // Fetch patients list for context
   const { data: patients } = useQuery({
@@ -371,6 +405,27 @@ export default function DictationPage() {
     setErrorMsg('')
 
     try {
+      if (!navigator.onLine) {
+
+        await saveOfflineRecording({
+          id: crypto.randomUUID(),
+          patientId,
+          transcript,
+          createdAt: new Date().toISOString()
+        })
+
+        toast.success(
+          'Saved locally. Will sync later.'
+        )
+
+        setStatusText(
+          'Offline mode - recording saved.'
+        )
+
+        setIsProcessing(false)
+
+        return
+      }
       // Find patient context if selected
       let patientContext = ''
       if (patientId && patients) {
