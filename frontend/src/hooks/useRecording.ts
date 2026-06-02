@@ -76,9 +76,12 @@ export function useRecording() {
         const text: string = msg.transcript || ''
         if (!msg.end_of_turn) {
           setLiveText(text)
-        } else if (text) {
-          finalTextRef.current = `${finalTextRef.current} ${text}`.trim()
-          appendTranscript(finalTextRef.current)
+        } else {
+          if (text) {
+            finalTextRef.current = `${finalTextRef.current} ${text}`.trim()
+            appendTranscript(finalTextRef.current)
+          }
+          setLiveText('')
         }
       }
     }
@@ -93,8 +96,41 @@ export function useRecording() {
       sessionReadyRef.current = false
     }
 
-    // AudioWorklet PCM pipeline
-    await ctx.audioWorklet.addModule('/pcm-processor.js')
+    // Inline AudioWorklet PCM pipeline to avoid path issues
+    const workletCode = `
+      class PCMProcessor extends AudioWorkletProcessor {
+        constructor() {
+          super();
+          this._buffer = new Float32Array(0);
+          this._targetSamples = 1600;
+        }
+        process(inputs) {
+          const input = inputs[0];
+          if (!input || !input[0]) return true;
+          const chunk = input[0];
+          const merged = new Float32Array(this._buffer.length + chunk.length);
+          merged.set(this._buffer);
+          merged.set(chunk, this._buffer.length);
+          this._buffer = merged;
+          while (this._buffer.length >= this._targetSamples) {
+            const slice = this._buffer.slice(0, this._targetSamples);
+            this._buffer = this._buffer.slice(this._targetSamples);
+            const int16 = new Int16Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              const s = Math.max(-1, Math.min(1, slice[i]));
+              int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            this.port.postMessage(int16.buffer, [int16.buffer]);
+          }
+          return true;
+        }
+      }
+      registerProcessor('pcm-processor', PCMProcessor);
+    `;
+    const blob = new Blob([workletCode], { type: 'application/javascript' });
+    const workletUrl = URL.createObjectURL(blob);
+    
+    await ctx.audioWorklet.addModule(workletUrl)
     const worklet = new AudioWorkletNode(ctx, 'pcm-processor')
     workletNodeRef.current = worklet
 
@@ -129,8 +165,11 @@ export function useRecording() {
       pausedRef.current = false
 
       const ctx = new AudioContext({ sampleRate: 16000 })
+      if (ctx.state === 'suspended') {
+        await ctx.resume()
+      }
       audioContextRef.current = ctx
-
+      
       const source = ctx.createMediaStreamSource(stream)
 
       // Analyser for waveform visualiser

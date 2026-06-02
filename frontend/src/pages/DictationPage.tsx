@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { 
   Mic, MicOff, Upload, FileText, Printer, Save,
   RefreshCw, Trash2, ArrowRight, User, AlertCircle,
-  Volume2, Pause, Play, WifiOff
+  Volume2, Pause, Play, WifiOff, RotateCcw
 } from 'lucide-react'
 import { dictationApi } from '@/api/dictation'
 import { saveOfflineRecording }from '@/offline/offlineStorage'
@@ -210,9 +210,11 @@ export default function DictationPage() {
         const turnText: string = res.transcript || ''
         if (!res.end_of_turn) {
           setRealtimeText(turnText)
-        } else if (turnText) {
-          finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
-          setTranscript(finalTranscriptRef.current)
+        } else {
+          if (turnText) {
+            finalTranscriptRef.current = `${finalTranscriptRef.current} ${turnText}`.trim()
+            setTranscript(finalTranscriptRef.current)
+          }
           setRealtimeText('')
         }
       }
@@ -226,8 +228,41 @@ export default function DictationPage() {
       sessionReadyRef.current = false
     }
 
-    // AudioWorklet PCM pipeline
-    await audioContext.audioWorklet.addModule('/pcm-processor.js')
+    // Inline AudioWorklet PCM pipeline to avoid path issues
+    const workletCode = `
+      class PCMProcessor extends AudioWorkletProcessor {
+        constructor() {
+          super();
+          this._buffer = new Float32Array(0);
+          this._targetSamples = 1600;
+        }
+        process(inputs) {
+          const input = inputs[0];
+          if (!input || !input[0]) return true;
+          const chunk = input[0];
+          const merged = new Float32Array(this._buffer.length + chunk.length);
+          merged.set(this._buffer);
+          merged.set(chunk, this._buffer.length);
+          this._buffer = merged;
+          while (this._buffer.length >= this._targetSamples) {
+            const slice = this._buffer.slice(0, this._targetSamples);
+            this._buffer = this._buffer.slice(this._targetSamples);
+            const int16 = new Int16Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              const s = Math.max(-1, Math.min(1, slice[i]));
+              int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+            this.port.postMessage(int16.buffer, [int16.buffer]);
+          }
+          return true;
+        }
+      }
+      registerProcessor('pcm-processor', PCMProcessor);
+    `;
+    const blob = new Blob([workletCode], { type: 'application/javascript' });
+    const workletUrl = URL.createObjectURL(blob);
+    
+    await audioContext.audioWorklet.addModule(workletUrl)
     const worklet = new AudioWorkletNode(audioContext, 'pcm-processor')
     workletNodeRef.current = worklet
 
@@ -262,6 +297,9 @@ export default function DictationPage() {
       streamRef.current = stream
 
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 })
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume()
+      }
       audioContextRef.current = audioContext
       const source = audioContext.createMediaStreamSource(stream)
       sourceRef.current = source
@@ -396,6 +434,52 @@ export default function DictationPage() {
     setIsPaused(false)
     setStatusText('Listening actively... speak now.')
     startAutoSave()
+  }
+
+  // Restart recording (discard current and reset)
+  const handleRestart = async () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = null
+      if (mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume()
+      }
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop()
+      }
+      mediaRecorderRef.current = null
+    }
+
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'Terminate' }))
+      }
+      wsRef.current.close()
+      wsRef.current = null
+      sessionReadyRef.current = false
+    }
+
+    if (workletNodeRef.current) {
+      workletNodeRef.current.disconnect()
+      workletNodeRef.current = null
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close()
+      audioContextRef.current = null
+    }
+
+    streamRef.current?.getTracks().forEach(track => track.stop())
+    streamRef.current = null
+
+    await stopAutoSave(false)
+
+    setIsRecording(false)
+    setIsPaused(false)
+    
+    clearDictation()
+    finalTranscriptRef.current = ''
+    setErrorMsg('')
+    toast('Recording discarded. Ready to start fresh.', { icon: '🔄' })
   }
 
   // Process the final audio blob
@@ -658,6 +742,21 @@ export default function DictationPage() {
                       <Pause size={14} /> Pause
                     </button>
                   )}
+                  {isRecording && (
+                    <button
+                      onClick={handleRestart}
+                      disabled={isProcessing}
+                      title="Discard recording and start fresh"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 18px', background: 'var(--surface)', color: 'var(--text-3)',
+                        border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <RotateCcw size={14} /> Restart
+                    </button>
+                  )}
                   {isPaused && (
                     <button
                       onClick={resumeRecording}
@@ -684,6 +783,21 @@ export default function DictationPage() {
                       }}
                     >
                       <MicOff size={14} /> Stop
+                    </button>
+                  )}
+                  {isPaused && (
+                    <button
+                      onClick={handleRestart}
+                      disabled={isProcessing}
+                      title="Discard recording and start fresh"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 18px', background: 'var(--surface)', color: 'var(--text-3)',
+                        border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <RotateCcw size={14} /> Restart
                     </button>
                   )}
                 </div>
