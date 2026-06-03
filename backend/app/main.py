@@ -86,7 +86,7 @@ from app.models.document_embedding import DocumentEmbedding  # RAG embeddings ta
 
 # routers
 from app.api.auth import router as auth_router
-from app.api.patient_portal import router as patient_portal_router
+
 from app.api.patient import router as patient_router
 from app.api.consultation import router as consultation_router
 from app.api.report import router as report_router
@@ -162,7 +162,7 @@ api_v1.include_router(audit_router, prefix="/audit", tags=["Audit Logs"])
 api_v1.include_router(radiology_router,prefix="/radiology",tags=["Radiology"])
 api_v1.include_router(api_keys,prefix="/api-keys",tags=["API Keys"])
 api_v1.include_router(admin_router,prefix="/admin",  tags=["Admin"])
-api_v1.include_router(patient_portal_router, prefix="/patient-portal", tags=["Patient Portal"])
+
 api_v1.include_router(external_radiology_router,prefix="/external/radiology",tags=["External Radiology"])
 app.include_router(api_v1)
 
