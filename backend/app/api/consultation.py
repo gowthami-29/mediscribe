@@ -34,9 +34,10 @@ router = APIRouter()
 def list_consultations(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
+    patient_id: Optional[str] = None,
     limit: int = 10
 ):
-    return ConsultationService.get_consultations(db, current_user.organization_id)
+    return ConsultationService.get_consultations(db, current_user.organization_id, patient_id)
 
 # CREATE CONSULTATION
 @router.post("")

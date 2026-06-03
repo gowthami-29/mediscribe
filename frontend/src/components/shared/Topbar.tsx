@@ -32,17 +32,17 @@ export default function Topbar() {
   return (
     <>
       <header style={{
-        height: 60,
-        background: 'var(--surface)',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        gap: 10,
-        flexShrink: 0,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        transition: 'background 0.3s ease, border-color 0.3s ease',
-      }}>
+      height: 'var(--topbar-h)',
+      background: 'var(--surface)',
+      borderBottom: '1px solid var(--border)',
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 20px',
+      gap: 10,
+      flexShrink: 0,
+      boxShadow: '0 1px 8px rgba(30,58,138,0.06)',
+      transition: 'background 0.3s ease, border-color 0.3s ease',
+    }}>
         {/* Mobile Menu Toggle */}
         <button
           onClick={toggleSidebar}
@@ -76,9 +76,11 @@ export default function Topbar() {
             </button>
           )}
           <div style={{ 
-            fontFamily: 'DM Serif Display, serif', 
-            fontSize: 'clamp(14px, 3.5vw, 18px)', 
+            fontFamily: 'Plus Jakarta Sans, Inter, system-ui, sans-serif', 
+            fontSize: 'clamp(14px, 3.5vw, 17px)',
+            fontWeight: 700,
             color: 'var(--text-1)',
+            letterSpacing: '-0.02em',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -95,7 +97,7 @@ export default function Topbar() {
           borderRadius: 10, padding: '7px 13px', minWidth: 180, maxWidth: 280,
           transition: 'all 0.15s',
         }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--teal)')}
+          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--blue)')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
         >
           <Search size={14} color="var(--text-3)" />
@@ -172,7 +174,7 @@ export default function Topbar() {
           <span style={{
             position: 'absolute', top: 7, right: 7,
             width: 6, height: 6, borderRadius: '50%',
-            background: '#f43f5e', border: '1.5px solid var(--surface)',
+            background: 'var(--rose)', border: '1.5px solid #fff',
           }} />
         </button>
 
@@ -181,11 +183,12 @@ export default function Topbar() {
           onClick={() => navigate('/app/settings')}
           title="Profile & Settings"
           style={{
-            width: 34, height: 34, borderRadius: 10, cursor: 'pointer', flexShrink: 0,
-            background: 'var(--grad-teal)',
+            width: 36, height: 36, borderRadius: 10, cursor: 'pointer', flexShrink: 0,
+            background: 'var(--grad-blue)',
             color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12.5, fontWeight: 700, boxShadow: 'var(--shadow-teal)',
+            fontSize: 12, fontWeight: 700, boxShadow: 'var(--shadow-blue)',
             transition: 'transform 0.15s',
+            letterSpacing: '0.04em',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}

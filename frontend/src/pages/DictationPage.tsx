@@ -5,8 +5,7 @@ import {
   Volume2, Pause, Play, WifiOff, RotateCcw
 } from 'lucide-react'
 import { dictationApi } from '@/api/dictation'
-import { saveOfflineRecording }from '@/offline/offlineStorage'
-import {getOfflineRecordings,clearOfflineRecordings} from '@/offline/offlineStorage'
+import { saveOfflineRecording } from '@/offline/offlineStorage'
 import { useQuery } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import { useDictationStore } from '@/store/dictationStore'
@@ -74,38 +73,7 @@ export default function DictationPage() {
       window.removeEventListener('offline', onOffline)
     }
   }, [])
-  useEffect(() => {
 
-  const syncPending = async () => {
-
-    const pending = getOfflineRecordings()
-
-    if (pending.length > 0) {
-
-      console.log(
-        `Found ${pending.length} pending recordings`
-      )
-
-      toast.success(
-        `${pending.length} recordings ready to sync`
-      )
-
-      clearOfflineRecordings()
-    }
-  }
-
-  window.addEventListener(
-    'online',
-    syncPending
-  )
-
-  return () =>
-    window.removeEventListener(
-      'online',
-      syncPending
-    )
-
-}, [])
 
   // Fetch patients list for context
   const { data: patients } = useQuery({
@@ -488,35 +456,38 @@ export default function DictationPage() {
     setStatusText('Transcribing speech and generating structured clinical report...')
     setErrorMsg('')
 
-    try {
-      if (!navigator.onLine) {
+    // Find patient context if selected
+    let patientContext = ''
+    if (patientId && patients) {
+      const selectedPat = patients.find((p: any) => p.patient_id === patientId)
+      if (selectedPat) {
+        patientContext = `Patient Name: ${selectedPat.first_name} ${selectedPat.last_name}, DOB: ${selectedPat.date_of_birth}, Gender: ${selectedPat.gender}. Medical History: ${selectedPat.medical_history || 'None recorded'}.`
+      }
+    }
 
+    try {
+      if (audioBlob.size < 1000) {
+        toast.error('Recording is too short or empty. Please check your microphone and try again.')
+        setStatusText('Recording was empty.')
+        setIsProcessing(false)
+        return
+      }
+
+      if (!navigator.onLine) {
         await saveOfflineRecording({
           id: crypto.randomUUID(),
           patientId,
+          patientContext,
+          audioBlob,
+          letterhead,
           transcript,
           createdAt: new Date().toISOString()
         })
 
-        toast.success(
-          'Saved locally. Will sync later.'
-        )
-
-        setStatusText(
-          'Offline mode - recording saved.'
-        )
-
+        toast.success('Saved locally. Will sync later.')
+        setStatusText('Offline mode - recording saved.')
         setIsProcessing(false)
-
         return
-      }
-      // Find patient context if selected
-      let patientContext = ''
-      if (patientId && patients) {
-        const selectedPat = patients.find((p: any) => p.patient_id === patientId)
-        if (selectedPat) {
-          patientContext = `Patient Name: ${selectedPat.first_name} ${selectedPat.last_name}, DOB: ${selectedPat.date_of_birth}, Gender: ${selectedPat.gender}. Medical History: ${selectedPat.medical_history || 'None recorded'}.`
-        }
       }
 
       const response = await dictationApi.transcribeAndReport(audioBlob, letterhead, patientContext)
@@ -529,12 +500,47 @@ export default function DictationPage() {
         }
         setStatusText('Report generated successfully!')
       } else {
-        setErrorMsg(response.error || 'Failed to process clinical dictation.')
+        const errorText = response.error || 'Failed to process clinical dictation.'
+        // If the backend failed because it couldn't reach AssemblyAI/OpenAI (common when testing offline on localhost)
+        if (errorText.toLowerCase().includes('connection') || errorText.toLowerCase().includes('resolve host')) {
+          await saveOfflineRecording({
+            id: crypto.randomUUID(),
+            patientId,
+            patientContext,
+            audioBlob,
+            letterhead,
+            transcript,
+            createdAt: new Date().toISOString()
+          })
+          toast.success('Saved locally. Will sync later.')
+          setStatusText('Offline mode - recording saved.')
+          return
+        }
+
+        setErrorMsg(errorText)
         setStatusText('Generation failed.')
       }
     } catch (err: any) {
       console.error(err)
-      setErrorMsg(err.response?.data?.detail || 'An unexpected error occurred during report generation.')
+      const errorDetail = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
+      
+      // If the frontend couldn't reach the backend (production offline behavior) or backend throws a connection error
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error' || errorDetail.toLowerCase().includes('connection') || errorDetail.toLowerCase().includes('name resolution')) {
+        await saveOfflineRecording({
+          id: crypto.randomUUID(),
+          patientId,
+          patientContext,
+          audioBlob,
+          letterhead,
+          transcript,
+          createdAt: new Date().toISOString()
+        })
+        toast.success('Saved locally. Will sync later.')
+        setStatusText('Offline mode - recording saved.')
+        return
+      }
+
+      setErrorMsg(errorDetail)
       setStatusText('Error occurred.')
     } finally {
       setIsProcessing(false)

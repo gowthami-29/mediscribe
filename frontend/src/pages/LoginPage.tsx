@@ -41,7 +41,7 @@ useEffect(() => {
             onClick={() => { setTab(t) }}
             className={`flex-1 py-3 text-sm font-semibold transition-all duration-200 border-b-2 ${
               tab === t
-                ? 'border-[#0d6e6e] text-[#0d6e6e]'
+                ? 'border-[#2563eb] text-[#2563eb]'
                 : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >

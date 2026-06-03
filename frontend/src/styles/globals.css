@@ -1,5 +1,5 @@
 /* ─── Google Fonts ──────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,72 +7,78 @@
 
 @layer base {
   :root {
-    /* Background Layers */
-    --bg:            #f0f4f8;
-    --bg-2:          #e8edf5;
+    /* ── Background Layers — Pure clinical white ── */
+    --bg:            #f4f7fb;
+    --bg-2:          #eaf0f9;
     --surface:       #ffffff;
-    --surface-2:     #f7f8fc;
-    --surface-hover: #f3f6fb;
-    --surface-active:#e8f0fe;
+    --surface-2:     #f8faff;
+    --surface-hover: #eef4ff;
+    --surface-active:#dbeafe;
 
-    /* Borders */
-    --border:        #e1e7f0;
-    --border-2:      #c8d3e0;
-    --border-focus:  #0d9488;
+    /* ── Borders ── */
+    --border:        #dce6f5;
+    --border-2:      #b8cee8;
+    --border-focus:  #2563eb;
 
-    /* Text */
-    --text-1:        #0d1117;
-    --text-2:        #374151;
-    --text-3:        #6b7280;
-    --text-4:        #9ca3af;
+    /* ── Text — WCAG AA accessible contrast ── */
+    --text-1:        #0f172a;
+    --text-2:        #1e3a5f;
+    --text-3:        #4a6080;
+    --text-4:        #8fa5c0;
 
-    /* Brand – Deep Teal */
-    --teal:          #0d9488;
-    --teal-dark:     #0f766e;
-    --teal-darker:   #115e59;
-    --teal-light:    #f0fdfa;
-    --teal-mid:      #14b8a6;
-    --teal-glow:     rgba(13,148,136,0.15);
+    /* ── Brand — Medical Blue ── */
+    --teal:          #2563eb;
+    --teal-dark:     #1d4ed8;
+    --teal-darker:   #1e40af;
+    --teal-light:    #eff6ff;
+    --teal-mid:      #3b82f6;
+    --teal-glow:     rgba(37,99,235,0.15);
 
-    /* Accent colours */
-    --blue:          #3b82f6;
+    /* ── Accent colours ── */
+    --blue:          #2563eb;
+    --blue-dark:     #1d4ed8;
     --blue-light:    #eff6ff;
+    --blue-mid:      #3b82f6;
+    --blue-glow:     rgba(37,99,235,0.15);
     --violet:        #7c3aed;
     --violet-light:  #f5f3ff;
-    --amber:         #f59e0b;
+    --amber:         #d97706;
     --amber-light:   #fffbeb;
-    --rose:          #f43f5e;
-    --rose-light:    #fff1f2;
-    --emerald:       #10b981;
+    --rose:          #dc2626;
+    --rose-light:    #fef2f2;
+    --emerald:       #059669;
     --emerald-light: #ecfdf5;
+    --cyan:          #0891b2;
+    --cyan-light:    #ecfeff;
 
-    /* Layout */
-    --sidebar-w:     252px;
-    --topbar-h:      60px;
+    /* ── Layout ── */
+    --sidebar-w:     256px;
+    --topbar-h:      62px;
     --radius:        12px;
     --radius-sm:     8px;
-    --radius-lg:     16px;
+    --radius-lg:     18px;
 
-    /* Shadows */
-    --shadow-xs:     0 1px 2px rgba(0,0,0,0.05);
-    --shadow-sm:     0 1px 4px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.04);
-    --shadow:        0 2px 8px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.04);
-    --shadow-lg:     0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
-    --shadow-teal:   0 4px 20px rgba(13,148,136,0.25);
+    /* ── Shadows ── */
+    --shadow-xs:     0 1px 3px rgba(30,58,138,0.06);
+    --shadow-sm:     0 1px 4px rgba(30,58,138,0.08), 0 2px 10px rgba(30,58,138,0.04);
+    --shadow:        0 4px 16px rgba(30,58,138,0.10), 0 2px 6px rgba(30,58,138,0.04);
+    --shadow-lg:     0 8px 32px rgba(30,58,138,0.14), 0 2px 8px rgba(30,58,138,0.06);
+    --shadow-teal:   0 4px 20px rgba(37,99,235,0.22);
+    --shadow-blue:   0 4px 20px rgba(37,99,235,0.22);
 
-    /* Gradients */
-    --grad-teal:     linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-    --grad-blue:     linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    /* ── Gradients ── */
+    --grad-teal:     linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+    --grad-blue:     linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
     --grad-violet:   linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-    --grad-amber:    linear-gradient(135deg, #f59e0b 0%, #fb923c 100%);
-    --grad-rose:     linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
-    --grad-emerald:  linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    --grad-amber:    linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    --grad-rose:     linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    --grad-emerald:  linear-gradient(135deg, #059669 0%, #10b981 100%);
+    --grad-header:   linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #2563eb 100%);
 
     /* ── Backward-compatible aliases ── */
     --text:          var(--text-1);
-    --surface-hover: #f3f6fb;
 
-    /* ── Color scheme (tells browser to render native controls in light mode) ── */
+    /* ── Color scheme ── */
     color-scheme: light;
   }
 
@@ -80,51 +86,59 @@
      DARK MODE THEME
   ════════════════════════════════════════ */
   [data-theme="dark"] {
-    /* Backgrounds — Even deeper for "Midnight" feel */
-    --bg:            #040507;
-    --bg-2:          #06080a;
-    --surface:       #080a0e;
-    --surface-2:     #0c1016;
-    --surface-hover: #121822;
-    --surface-active:#0f141d;
+    /* Backgrounds — Clean sleek dark mode (slate) */
+    --bg:            #0f172a;
+    --bg-2:          #1e293b;
+    --surface:       #1e293b;
+    --surface-2:     #334155;
+    --surface-hover: #334155;
+    --surface-active:#475569;
 
-    /* Borders — Subtler but higher contrast against deep backgrounds */
-    --border:        #151b27;
-    --border-2:      #1d2433;
-    --border-focus:  #10b981;
+    /* Borders */
+    --border:        #334155;
+    --border-2:      #475569;
+    --border-focus:  #3b82f6;
 
-    /* Text — Brighter whites for readability */
-    --text-1:        #ffffff;
-    --text-2:        #f1f5f9;
+    /* Text */
+    --text-1:        #f8fafc;
+    --text-2:        #e2e8f0;
     --text-3:        #94a3b8;
-    --text-4:        #475569;
+    --text-4:        #64748b;
 
-    /* Brand — Deeper Emerald Green for a premium look */
-    --teal:          #10b981;
-    --teal-dark:     #065f46;
-    --teal-darker:   #064e3b;
-    --teal-light:    rgba(16,185,129,0.12);
-    --teal-mid:      #34d399;
-    --teal-glow:     rgba(16,185,129,0.25);
+    /* Brand — Blue */
+    --teal:          #3b82f6;
+    --teal-dark:     #2563eb;
+    --teal-darker:   #1d4ed8;
+    --teal-light:    rgba(59,130,246,0.15);
+    --teal-mid:      #60a5fa;
+    --teal-glow:     rgba(59,130,246,0.25);
+    
+    --blue:          #3b82f6;
+    --blue-dark:     #2563eb;
+    --blue-light:    rgba(59,130,246,0.15);
+    --blue-mid:      #60a5fa;
+    --blue-glow:     rgba(59,130,246,0.25);
 
-    /* Accent — keep vivid but adjusted for deep dark */
-    --blue-light:    rgba(59,130,246,0.12);
-    --violet-light:  rgba(124,58,237,0.12);
-    --amber-light:   rgba(245,158,11,0.12);
-    --rose-light:    rgba(244,63,94,0.12);
-    --emerald-light: rgba(16,185,129,0.12);
+    /* Gradients */
+    --grad-teal:     linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --grad-blue:     linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --grad-header:   linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 
-    /* Shadows — even deeper for depth */
-    --shadow-xs:     0 1px 2px rgba(0,0,0,0.5);
-    --shadow-sm:     0 2px 8px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.3);
-    --shadow:        0 4px 20px rgba(0,0,0,0.7), 0 8px 32px rgba(0,0,0,0.4);
-    --shadow-lg:     0 12px 48px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.5);
-    --shadow-teal:   0 8px 32px rgba(16,185,129,0.2);
+    /* Accents */
+    --violet-light:  rgba(167,139,250,0.15);
+    --amber-light:   rgba(251,191,36,0.15);
+    --rose-light:    rgba(244,63,94,0.15);
+    --emerald-light: rgba(16,185,129,0.15);
 
-    /* Compat alias */
-    --text:          #ffffff;
+    /* Shadows */
+    --shadow-xs:     0 1px 3px rgba(0,0,0,0.3);
+    --shadow-sm:     0 2px 8px rgba(0,0,0,0.4);
+    --shadow:        0 4px 16px rgba(0,0,0,0.5);
+    --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
+    --shadow-teal:   0 8px 24px rgba(59,130,246,0.25);
+    --shadow-blue:   0 8px 24px rgba(59,130,246,0.25);
 
-    /* ── Color scheme (tells browser to render native controls in dark mode) ── */
+    --text: #f8fafc;
     color-scheme: dark;
   }
 
@@ -134,20 +148,22 @@
 
   html, body {
     height: 100%;
-    font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     background: var(--bg);
     color: var(--text-2);
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 14.5px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.005em;
   }
 
   h1, h2, h3, h4, h5 {
-    font-family: 'DM Serif Display', Georgia, serif;
-    font-weight: 400;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
     color: var(--text-1);
     line-height: 1.25;
+    letter-spacing: -0.02em;
   }
 
   a { color: inherit; text-decoration: none; }
@@ -236,16 +252,18 @@
   .btn:active { transform: translateY(0); box-shadow: none; }
 
   .btn-primary {
-    background: var(--grad-teal);
+    background: var(--grad-blue);
     border-color: transparent;
     color: #fff;
-    box-shadow: var(--shadow-teal);
+    box-shadow: var(--shadow-blue);
+    font-weight: 600;
+    letter-spacing: 0.01em;
   }
   .btn-primary:hover {
-    background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 100%);
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%);
     border-color: transparent;
-    box-shadow: 0 6px 24px rgba(13,148,136,0.35);
-    transform: translateY(-1px);
+    box-shadow: 0 6px 28px rgba(37,99,235,0.38);
+    transform: translateY(-1.5px);
   }
 
   .btn-sm { padding: 6px 12px; font-size: 12.5px; }
@@ -286,8 +304,8 @@
     outline: none;
   }
   .form-control:focus {
-    border-color: var(--teal);
-    box-shadow: 0 0 0 3px var(--teal-glow);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-glow);
   }
   .form-control::placeholder { color: var(--text-4); }
   .form-control:disabled {
@@ -374,16 +392,18 @@
   }
   .page-title {
     font-size: clamp(20px, 4vw, 24px);
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
     color: var(--text-1);
     margin: 0;
     white-space: nowrap;
+    letter-spacing: -0.02em;
   }
   .page-subtitle {
-    font-size: 13px;
+    font-size: 13.5px;
     color: var(--text-3);
     margin-top: 3px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
   /* ── Premium Stat Card ───────────────────────────────────── */
@@ -528,6 +548,94 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 .slide-in { animation: slideIn 0.2s ease forwards; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-up { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+/* ── Hospital-Grade Animation Library ───────────────────────── */
+
+/* Heartbeat — for critical alert icons */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14%       { transform: scale(1.08); }
+  28%       { transform: scale(1); }
+  42%       { transform: scale(1.05); }
+  70%       { transform: scale(1); }
+}
+.heartbeat { animation: heartbeat 1.6s ease-in-out infinite; }
+
+/* Gentle float — for dashboard cards and stat icons (hospital calm) */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+.float { animation: float 3.5s ease-in-out infinite; }
+
+/* Shimmer sweep — for loading/processing states */
+@keyframes shimmer-sweep {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer-sweep {
+  background: linear-gradient(90deg, transparent 0%, rgba(37,99,235,0.08) 50%, transparent 100%);
+  background-size: 400px 100%;
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+/* Medical cross pulse — for recording/live indicators */
+@keyframes med-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+  50%       { opacity: 0.85; box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+}
+.med-pulse { animation: med-pulse 2s ease-in-out infinite; }
+
+/* Staggered card entrance for lists */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-enter     { animation: card-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.card-enter-1   { animation: card-enter 0.35s 0.05s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.card-enter-2   { animation: card-enter 0.35s 0.10s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.card-enter-3   { animation: card-enter 0.35s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.card-enter-4   { animation: card-enter 0.35s 0.20s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Breathing glow — for active/selected items */
+@keyframes glow-breath {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+  50%       { box-shadow: 0 0 16px 4px rgba(37,99,235,0.18); }
+}
+.glow-breath { animation: glow-breath 2.5s ease-in-out infinite; }
+
+/* Data scan — for AI processing state */
+@keyframes data-scan {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+.data-scan {
+  overflow: hidden;
+  position: relative;
+}
+.data-scan::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+  animation: data-scan 2s linear infinite;
+}
+
+/* Approved checkmark bounce */
+@keyframes check-bounce {
+  0%   { transform: scale(0) rotate(-45deg); }
+  60%  { transform: scale(1.2) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.check-bounce { animation: check-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
 /* ── Responsive Design ─────────────────────────────────────── */
 @media (max-width: 1024px) {
@@ -754,7 +862,7 @@
 
 /* ── Focus Ring ─────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--teal);
+  outline: 2px solid var(--blue);
   outline-offset: 2px;
   border-radius: 4px;
 }

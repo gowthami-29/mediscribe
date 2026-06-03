@@ -78,14 +78,19 @@ export default function Sidebar() {
         flexDirection: 'column',
         flexShrink: 0,
         borderRight: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)',
+        boxShadow: '2px 0 16px rgba(30,58,138,0.07)',
         transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: 50,
       }}
     >
-      {/* ── Brand ─────────────────────────────── */}
-      <div style={{ padding: '24px 18px 20px' }}>
-        <Logo />
+      {/* ── Brand with blue accent bar ───────────────── */}
+      <div style={{
+        padding: '0 18px',
+        background: 'var(--grad-header)',
+        paddingTop: 20,
+        paddingBottom: 20,
+      }}>
+        <Logo variant="sidebar" />
       </div>
 
       {/* ── Navigation ────────────────────────── */}
@@ -95,7 +100,7 @@ export default function Sidebar() {
             <div style={{
               padding: '0 12px 6px',
               fontSize: 9.5, color: 'var(--text-4)',
-              letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800,
+              letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700,
             }}>
               {group.label}
             </div>
@@ -118,21 +123,22 @@ export default function Sidebar() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
-                    padding: '10px 12px',
+                    padding: '9px 12px',
                     marginBottom: 2,
                     borderRadius: 10,
                     cursor: 'pointer',
                     fontSize: 13.5,
                     fontWeight: isActive ? 600 : 500,
                     textDecoration: 'none',
-                    color: isActive ? 'var(--text-1)' : 'var(--text-3)',
-                    background: isActive ? 'var(--surface-active)' : 'transparent',
+                    color: isActive ? 'var(--blue)' : 'var(--text-3)',
+                    background: isActive ? 'var(--blue-light)' : 'transparent',
+                    borderLeft: isActive ? '3px solid var(--blue)' : '3px solid transparent',
                     transition: 'all 0.15s ease',
                   })}
                   onMouseEnter={(e) => {
                     if (!e.currentTarget.classList.contains('active')) {
                       e.currentTarget.style.background = 'var(--surface-hover)'
-                      e.currentTarget.style.color = 'var(--text-2)'
+                      e.currentTarget.style.color = 'var(--blue)'
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -145,13 +151,13 @@ export default function Sidebar() {
                   {({ isActive }) => (
                     <>
                       <div style={{
-                        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isActive ? 'var(--surface)' : 'var(--surface-2)',
-                        boxShadow: isActive ? 'var(--shadow-xs)' : 'none',
+                        background: isActive ? 'var(--surface-active)' : 'var(--surface-2)',
+                        boxShadow: isActive ? '0 2px 8px rgba(37,99,235,0.15)' : 'none',
                         transition: 'all 0.15s',
                       }}>
-                        <Icon size={14.5} color={isActive ? 'var(--teal)' : 'var(--text-4)'} />
+                        <Icon size={15} color={isActive ? 'var(--blue)' : 'var(--text-4)'} />
                       </div>
 
                       <span style={{ flex: 1 }}>{item.label}</span>
@@ -179,7 +185,7 @@ export default function Sidebar() {
                       )}
 
                       {isActive && (
-                        <div style={{ width: 4, height: 16, background: 'var(--teal)', borderRadius: 10, marginLeft: 4 }} />
+                        <div style={{ width: 4, height: 16, background: 'var(--blue)', borderRadius: 10, marginLeft: 4 }} />
                       )}
                     </>
                   )}
@@ -200,11 +206,12 @@ export default function Sidebar() {
           <div
             onClick={() => navigate('/app/settings')}
             style={{
-              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-              background: 'var(--grad-teal)',
+              width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+              background: 'var(--grad-blue)',
               color: '#fff', display: 'flex', alignItems: 'center',
               justifyContent: 'center', fontSize: 11, fontWeight: 700,
-              cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
+              cursor: 'pointer', boxShadow: 'var(--shadow-blue)',
+              letterSpacing: '0.03em',
             }}
           >
             {user ? getInitials(user.full_name) : 'DR'}

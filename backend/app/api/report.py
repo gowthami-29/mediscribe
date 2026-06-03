@@ -49,16 +49,16 @@ def _serialize_report(r: Report) -> dict:
 @router.get("")
 def list_reports(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
+    patient_id: Optional[str] = None
 ):
     """List all reports for the current user's organization, newest first."""
     try:
-        reports = (
-            db.query(Report)
-            .filter(Report.organization_id == current_user.organization_id)
-            .order_by(Report.created_at.desc())
-            .all()
-        )
+        query = db.query(Report).filter(Report.organization_id == current_user.organization_id)
+        if patient_id:
+            query = query.filter(Report.patient_id == patient_id)
+        
+        reports = query.order_by(Report.created_at.desc()).all()
         return [_serialize_report(r) for r in reports]
     except Exception as e:
         logger.error(f"Error listing reports: {e}", exc_info=True)

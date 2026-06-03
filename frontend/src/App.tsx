@@ -18,6 +18,7 @@ import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
 import PatientsPage from '@/pages/PatientsPage'
+import PatientDetailPage from '@/pages/PatientDetailPage'
 import ConsultationsPage from '@/pages/ConsultationsPage'
 import SoapEditorPage from '@/pages/SoapEditorPage'
 import AIAnalysisPage from '@/pages/AIAnalysisPage'
@@ -61,6 +62,7 @@ export default function App() {
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="patients" element={<PatientsPage />} />
+        <Route path="patients/:id" element={<PatientDetailPage />} />
         <Route path="radiology" element={<RadiologyViewerPage />} />
         <Route path="consultations" element={<ConsultationsPage />} />
         <Route path="consultations/:id/soap" element={<SoapEditorPage />} />

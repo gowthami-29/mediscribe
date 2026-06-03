@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { patientsApi } from '@/api/patients'
 import { Search, Plus, Pencil, Trash2, Users, UserCheck, UserX } from 'lucide-react'
@@ -18,6 +19,7 @@ const AVATAR_COLORS = [
 const getAvatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
 
 export default function PatientTable() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -40,11 +42,18 @@ export default function PatientTable() {
 
   const filtered = patients.filter((p) => {
     const q = search.toLowerCase()
+    
+    // Add date formatting to search fields
+    const dobFormatted = p.date_of_birth ? format(new Date(p.date_of_birth), 'MMM d, yyyy').toLowerCase() : ''
+    const registeredFormatted = p.created_at ? format(new Date(p.created_at), 'MMM d, yyyy').toLowerCase() : ''
+
     return (
       p.first_name?.toLowerCase().includes(q) ||
       p.last_name?.toLowerCase().includes(q) ||
       p.medical_id?.toLowerCase().includes(q) ||
-      p.email?.toLowerCase().includes(q)
+      p.email?.toLowerCase().includes(q) ||
+      dobFormatted.includes(q) ||
+      registeredFormatted.includes(q)
     )
   })
 
@@ -156,7 +165,11 @@ export default function PatientTable() {
                   const initials = getInitials(p.first_name, p.last_name)
                   const [avatarBg, avatarColor] = getAvatarColor(p.first_name ?? 'A')
                   return (
-                    <tr key={p.patient_id}>
+                    <tr 
+                      key={p.patient_id} 
+                      onClick={() => navigate(`/app/patients/${p.patient_id}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       {/* Patient */}
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
@@ -182,7 +195,7 @@ export default function PatientTable() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>MRN: <strong>{p.medical_id ?? '—'}</strong></span>
                           <button
-                            onClick={() => { navigator.clipboard.writeText(p.patient_id); toast.success('System ID Copied!') }}
+                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.patient_id); toast.success('System ID Copied!') }}
                             title="Click to copy System ID for AI Upload"
                             style={{
                               background: 'var(--surface-2)', border: '1px solid var(--border)',
@@ -223,7 +236,7 @@ export default function PatientTable() {
                       <td>
                         <div style={{ display: 'flex', gap: 7, justifyContent: 'flex-end' }}>
                           <button
-                            onClick={() => { setEditing(p); setShowForm(true) }}
+                            onClick={(e) => { e.stopPropagation(); setEditing(p); setShowForm(true) }}
                             title="Edit patient"
                             style={{
                               width: 30, height: 30, borderRadius: 8, cursor: 'pointer',
@@ -237,7 +250,7 @@ export default function PatientTable() {
                             <Pencil size={13} />
                           </button>
                           <button
-                            onClick={() => { if (confirm(`Archive ${p.first_name} ${p.last_name}?`)) deleteMut.mutate(p.patient_id) }}
+                            onClick={(e) => { e.stopPropagation(); if (confirm(`Archive ${p.first_name} ${p.last_name}?`)) deleteMut.mutate(p.patient_id) }}
                             title="Archive patient"
                             style={{
                               width: 30, height: 30, borderRadius: 8, cursor: 'pointer',
