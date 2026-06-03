@@ -38,8 +38,12 @@ export const dictationApi = {
     patientContext?: string
   ): Promise<DictationResult> => {
     const form = new FormData()
+    // Explicitly reconstruct the Blob to ensure type is preserved when retrieved from IDB
     const isText = audioBlob.type === 'text/plain'
-    form.append('audio', audioBlob, isText ? 'transcript.txt' : 'recording.webm')
+    const validMimeType = isText ? 'text/plain' : (audioBlob.type || 'audio/webm')
+    const safeAudioBlob = new Blob([audioBlob], { type: validMimeType })
+    
+    form.append('audio', safeAudioBlob, isText ? 'transcript.txt' : 'recording.webm')
     if (letterheadFile) {
       form.append('letterhead', letterheadFile, letterheadFile.name)
     }
