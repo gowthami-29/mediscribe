@@ -53,10 +53,11 @@ class ConsultationService:
             raise e
 
     @staticmethod
-    def get_consultations(db: Session, organization_id: str) -> List[Consultation]:
-        return db.query(Consultation).filter(
-            Consultation.organization_id == organization_id
-        ).order_by(Consultation.created_at.desc()).all()
+    def get_consultations(db: Session, organization_id: str, patient_id: Optional[str] = None) -> List[Consultation]:
+        query = db.query(Consultation).filter(Consultation.organization_id == organization_id)
+        if patient_id:
+            query = query.filter(Consultation.patient_id == patient_id)
+        return query.order_by(Consultation.created_at.desc()).all()
 
     @staticmethod
     def get_consultation_by_id(db: Session, consultation_id: str, organization_id: str):
