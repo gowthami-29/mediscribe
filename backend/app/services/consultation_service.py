@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from typing import Optional, List
 import os
+from app.models.subscription import OrganizationSubscription
 import json
 from app.models.consultation import Consultation
 from app.schemas.consultation import ConsultationCreate
@@ -155,6 +156,21 @@ class ConsultationService:
 
             # Transcribe directly from local file FIRST
             result = transcribe_audio(audio_file_path)
+            subscription = db.query(
+                OrganizationSubscription
+            ).filter(
+                OrganizationSubscription.organization_id == organization_id
+            ).first()
+
+            if subscription:
+                if (
+                    subscription.transcriptions_used
+                    >=
+                    subscription.transcription_limit
+                ):
+                    consultation.status = "limit_reached"
+                    db.commit()
+                    return consultation
 
             print("TRANSCRIPTION RESULT:", result)
 
@@ -172,6 +188,8 @@ class ConsultationService:
 
             # Upload to B2 for permanent storage AFTER transcription succeeds
             if result["status"] == "completed":
+                if subscription:
+                    subscription.transcriptions_used += 1
                 try:
                     b2_key = upload_to_b2(audio_file_path)
                     consultation.audio_file_id = b2_key

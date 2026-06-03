@@ -3,6 +3,15 @@ import { useAuthStore } from '@/store/authStore'
 import AppLayout from '@/components/shared/AppLayout'
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
+import AdminLayout from "@/components/admin/AdminLayout";
+
+import UpgradeRequests from '@/pages/admin/UpgradeRequests'
+import Patients from '@/pages/admin/Patients'
+import Dashboard from "@/pages/admin/Dashboard";
+import Subscriptions from '@/pages/admin/Subscriptions'
+import Organizations from "@/pages/admin/Organizations";
+import Usage from '@/pages/admin/Usage'
+import Doctors from "@/pages/admin/Doctors";
 import RegisterPage from '@/pages/RegisterPage'
 import APIKeysPage from '@/pages/APIKeysPage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
@@ -74,19 +83,21 @@ export default function App() {
       <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
       <Route path="/audit" element={<Navigate to="/app/audit" replace />} />
       <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
-      
-      <Route
-  path="/api-keys"
-  element={
-    <Navigate
-      to="/app/api-keys"
-      replace
-    />
-  }
-/>
+      <Route path="/api-keys"element={<Navigate to="/app/api-keys" replace/>}/>
+
+      <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+      <Route index element={<Dashboard />} />
+      <Route path="organizations" element={<Organizations />}/>
+      <Route path="doctors" element={<Doctors />}/>
+      <Route path="patients" element={<Patients />}/>
+      <Route path="subscriptions" element={<Subscriptions />} />
+      <Route path="usage" element={<Usage />} />
+      <Route path="upgrade-requests" element={<UpgradeRequests />}/>
+</Route>
+
       
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+<Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

@@ -42,14 +42,14 @@ class User(Base):
     license_number = Column(
         String(100),
         unique=True,
-        nullable=False
+        nullable=True
     )
 
     # Organization relation
     organization_id = Column(
         String,
         ForeignKey("organizations.organization_id"),
-        nullable=False
+        nullable=True
     )
 
     # Role management

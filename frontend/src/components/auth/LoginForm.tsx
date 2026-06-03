@@ -34,7 +34,11 @@ const LoginForm: React.FC = () => {
       }
 
       toast.success('Welcome back!')
-      navigate('/app/dashboard', { replace: true })
+      if (authRes.user.role === 'super_admin') {
+  navigate('/admin', { replace: true })
+} else {
+  navigate('/app/dashboard', { replace: true })
+}
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Invalid credentials')
     } finally {

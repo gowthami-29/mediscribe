@@ -53,7 +53,7 @@ class AuthService:
                 phone=user.phone,
                 license_number=user.license_number,
                 organization_id=org.organization_id,
-                role=user.role or "practitioner",
+                role= "practitioner",
                 timezone=user.timezone or "UTC",
                 language_preference=user.language_preference or "en",
                 status="active",

@@ -8,11 +8,17 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  useEffect(() => {
-    if (isAuthenticated) {
+  const user = useAuthStore((s) => s.user)
+
+useEffect(() => {
+  if (isAuthenticated) {
+    if (user?.role === 'super_admin') {
+      navigate('/admin', { replace: true })
+    } else {
       navigate('/app/dashboard', { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }
+}, [isAuthenticated, user, navigate])
 
   const handleRegisterSuccess = () => {
     setTab('login')

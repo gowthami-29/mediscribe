@@ -5,6 +5,7 @@ from fastapi.responses import Response
 from typing import List, Optional
 from fastapi import UploadFile, File
 import os
+from app.models.subscription import OrganizationSubscription
 from app.models.patient import Patient
 from app.models.user import User
 from app.db.deps import get_db
@@ -333,6 +334,20 @@ def approve_consultation_report(
     report.status = "approved"
     report.approved_by = current_user.user_id
     report.approved_at = datetime.now(timezone.utc)
+    subscription = db.query(
+    OrganizationSubscription
+    ).filter(
+        OrganizationSubscription.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    if subscription:
+        if subscription.reports_used >= subscription.report_limit:
+            raise HTTPException(
+                status_code=403,
+                detail="Report limit reached. Please upgrade your subscription."
+            )
+        subscription.reports_used += 1
 
     db.commit()
     db.refresh(report)
