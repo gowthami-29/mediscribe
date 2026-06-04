@@ -34,9 +34,15 @@ const LoginForm: React.FC = () => {
       }
 
       toast.success('Welcome back!')
-      if (authRes.user.role === 'super_admin') {
+     toast.success('Welcome back!')
+
+if (authRes.user.role === 'super_admin') {
   navigate('/admin', { replace: true })
-} else {
+}
+else if (authRes.user.role === 'patient') {
+  navigate('/patient/dashboard', { replace: true })
+}
+else {
   navigate('/app/dashboard', { replace: true })
 }
     } catch (err: any) {
