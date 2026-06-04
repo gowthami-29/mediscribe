@@ -112,6 +112,24 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
           Personal Information
           <span className="flex-1 h-px opacity-10 inline-block" style={{ background: 'var(--text-1)' }} />
         </p>
+        <div className="mb-4">
+  <label
+    className="block text-xs font-bold mb-1 uppercase tracking-wider"
+    style={labelStyle}
+  >
+    Account Type *
+  </label>
+
+  <select
+    className="w-full px-4 py-2.5 rounded-lg text-sm"
+    style={inpStyle}
+    value={formData.role}
+    onChange={(e) => set('role', e.target.value)}
+  >
+    <option value="practitioner">Doctor</option>
+    <option value="patient">Patient</option>
+  </select>
+</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold mb-1 uppercase tracking-wider" style={labelStyle}>Full Name *</label>
@@ -122,15 +140,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
               value={formData.full_name}
               onChange={e => set('full_name', e.target.value)} />
           </div>
-          <div>
-            <label className="block text-xs font-bold mb-1 uppercase tracking-wider" style={labelStyle}>Medical License No. *</label>
-            <input required className="w-full px-4 py-2.5 rounded-lg text-sm transition-all" style={inpStyle}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--teal)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-              placeholder="MCI-12345"
-              value={formData.license_number}
-              onChange={e => set('license_number', e.target.value)} />
-          </div>
+          {formData.role === 'practitioner' && (
+  <div>
+    <label
+      className="block text-xs font-bold mb-1 uppercase tracking-wider"
+      style={labelStyle}
+    >
+      Medical License No. *
+    </label>
+
+    <input
+      required={formData.role === 'practitioner'}
+      className="w-full px-4 py-2.5 rounded-lg text-sm transition-all"
+      style={inpStyle}
+      placeholder="MCI-12345"
+      value={formData.license_number}
+      onChange={e => set('license_number', e.target.value)}
+    />
+  </div>
+)}
           <div>
             <label className="block text-xs font-bold mb-1 uppercase tracking-wider" style={labelStyle}>Email Address *</label>
             <input required type="email" className="w-full px-4 py-2.5 rounded-lg text-sm transition-all" style={inpStyle}
@@ -156,7 +184,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       </div>
 
       {/* ── Section: Organisation ── */}
-      <div className="pb-1">
+      {formData.role === 'practitioner' && (
+  <div className="pb-1">
         <p className="text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--teal)' }}>
           <span className="w-4 h-px inline-block" style={{ background: 'var(--teal)' }} />
           Organisation Information
@@ -174,6 +203,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
           </div>
         </div>
       </div>
+        
+)}
 
       {/* ── Section: Preferences ── */}
       <div className="pb-1">

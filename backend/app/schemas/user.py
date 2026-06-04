@@ -4,15 +4,17 @@ from datetime import datetime
 
 
 class UserCreate(BaseModel):
-    full_name:           str
-    email:               EmailStr
-    password:            str
-    phone:               str
-    license_number:      str
-    organization_name:   str
-    role:                Optional[str] = 'practitioner'
-    timezone:            Optional[str] = 'UTC'
-    language_preference: Optional[str] = 'en'
+    full_name: str
+    email: EmailStr
+    password: str
+    phone: str
+
+    license_number: Optional[str] = None
+    organization_name: Optional[str] = None
+
+    role: Optional[str] = "practitioner"
+    timezone: Optional[str] = "UTC"
+    language_preference: Optional[str] = "en"
 
 
 class UserLogin(BaseModel):
@@ -35,8 +37,8 @@ class User(BaseModel):
     email:               str
     full_name:           str
     phone:               Optional[str] = None
-    license_number:      str
-    organization_id:     str
+    license_number: Optional[str] = None
+    organization_name: Optional[str] = None
     role:                str
     status:              str
     email_verified:      Optional[bool] = False

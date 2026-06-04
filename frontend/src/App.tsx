@@ -30,6 +30,8 @@ import SettingsPage from '@/pages/SettingsPage'
 import VerifyEmailPage from '@/pages/VerifyEmailPage'
 import DictationPage from '@/pages/DictationPage'
 import RadiologyViewerPage from '@/pages/RadiologyViewerPage'
+import PatientDashboard from '@/pages/patient/PatientDashboard'
+import MyReportsPage from '@/pages/patient/MyReportsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -106,6 +108,22 @@ export default function App() {
       <Route path="upgrade-requests" element={<UpgradeRequests />}/>
       
 </Route>
+<Route
+  path="/patient/dashboard"
+  element={
+    <ProtectedRoute>
+      <PatientDashboard />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/patient/reports"
+  element={
+    <ProtectedRoute>
+      <MyReportsPage />
+    </ProtectedRoute>
+  }
+/>
 
       
 

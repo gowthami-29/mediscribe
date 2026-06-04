@@ -99,6 +99,7 @@ from app.api.dictation import router as dictation_router
 from app.api.api_keys import router as api_keys
 from app.api.admin import router as admin_router
 from app.api.external_radiology import router as external_radiology_router
+from app.api import patient_portal
 
 
 # Create all database tables (Note: In production with migrations, this might be handled by Alembic)
@@ -164,7 +165,11 @@ api_v1.include_router(radiology_router,prefix="/radiology",tags=["Radiology"])
 api_v1.include_router(api_keys,prefix="/api-keys",tags=["API Keys"])
 api_v1.include_router(admin_router,prefix="/admin",  tags=["Admin"])
 api_v1.include_router(external_radiology_router,prefix="/external/radiology",tags=["External Radiology"])
-
+app.include_router(
+    patient_portal.router,
+    prefix="/patient",
+    tags=["Patient Portal"]
+)
 app.include_router(api_v1)
 
 @app.api_route("/", methods=["GET", "HEAD"])

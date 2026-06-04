@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import random
 import string
 import secrets
+from app.models.patient import Patient
 from app.models.user import User
 from app.models.organization import Organization
 from app.schemas.user import UserCreate, UserLogin
@@ -28,7 +29,43 @@ class AuthService:
         existing_user = db.query(User).filter(User.email == user.email).first()
         if existing_user:
             raise HTTPException(status_code=400, detail="Email already exists")
+        # Patient registration validation
+        if user.role == "patient":
 
+            patient = db.query(Patient).filter(
+                Patient.email == user.email
+            ).first()
+
+            if not patient:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Patient record not found. Contact your doctor."
+                )
+
+            hashed = hash_password(user.password)
+
+            new_user = User(
+                email=user.email,
+                password_hash=hashed,
+                full_name=user.full_name,
+                phone=user.phone,
+                role="patient",
+                status="active",
+                email_verified=True,
+                phone_verified=True
+            )
+
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+
+            return {
+                "message": "Patient registration successful",
+                "user_id": new_user.user_id
+            }
+
+        
+    # existing doctor registration code continues here
         try:
             # 2. Check if org exists with this email, or create it
             org = db.query(Organization).filter(Organization.email == user.email).first()
