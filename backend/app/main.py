@@ -165,7 +165,7 @@ api_v1.include_router(radiology_router,prefix="/radiology",tags=["Radiology"])
 api_v1.include_router(api_keys,prefix="/api-keys",tags=["API Keys"])
 api_v1.include_router(admin_router,prefix="/admin",  tags=["Admin"])
 api_v1.include_router(external_radiology_router,prefix="/external/radiology",tags=["External Radiology"])
-app.include_router(
+api_v1.include_router(
     patient_portal.router,
     prefix="/patient",
     tags=["Patient Portal"]
