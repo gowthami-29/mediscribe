@@ -4,7 +4,8 @@ import AppLayout from '@/components/shared/AppLayout'
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import AdminLayout from "@/components/admin/AdminLayout";
-
+import DoctorPatientsPage from "@/pages/admin/DoctorPatientsPage";
+import PatientConsultationsPage from './pages/admin/PatientConsultationsPage'
 import UpgradeRequests from '@/pages/admin/UpgradeRequests'
 import Patients from '@/pages/admin/Patients'
 import Dashboard from "@/pages/admin/Dashboard";
@@ -91,10 +92,19 @@ export default function App() {
       <Route index element={<Dashboard />} />
       <Route path="organizations" element={<Organizations />}/>
       <Route path="doctors" element={<Doctors />}/>
+      <Route
+  path="doctors/:doctorId/patients"
+  element={<DoctorPatientsPage />}
+/>
+<Route
+  path="patients/:patientId/consultations"
+  element={<PatientConsultationsPage />}
+/>
       <Route path="patients" element={<Patients />}/>
       <Route path="subscriptions" element={<Subscriptions />} />
       <Route path="usage" element={<Usage />} />
       <Route path="upgrade-requests" element={<UpgradeRequests />}/>
+      
 </Route>
 
       

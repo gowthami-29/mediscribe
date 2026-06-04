@@ -10,6 +10,11 @@ export const adminApi = {
   getDoctors: () =>
   apiClient.get('/admin/doctors').then((r) => r.data),
 
+  getDoctorPatients: (doctorId: string) =>
+  apiClient
+    .get(`/admin/doctors/${doctorId}/patients`)
+    .then((r) => r.data),
+
   getPatients: () =>
   apiClient.get('/admin/patients').then((r) => r.data),
 
@@ -41,4 +46,11 @@ approveUpgradeRequest: (requestId: string) =>
 
   getDashboard: () =>
   apiClient.get('/admin/dashboard').then((r) => r.data),
+
+  getPatientConsultations: (patientId: string) =>
+  apiClient
+    .get(`/admin/patients/${patientId}/consultations`)
+    .then((r) => r.data),
+
 }
+

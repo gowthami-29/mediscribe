@@ -57,7 +57,7 @@ class User(Base):
         String,
         default="practitioner"
     )
-    # admin / practitioner / supervisor / viewer
+    # admin / practitioner / supervisor / viewer / 
 
     # Account status
     status = Column(

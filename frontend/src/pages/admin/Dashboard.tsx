@@ -55,6 +55,23 @@ export default function Dashboard() {
             {stats.patients}
           </p>
         </div>
+        <div className="border rounded-lg p-6 shadow">
+          <h2 className="text-gray-500">
+            Consultations
+          </h2>
+          <p className="text-3xl font-bold">
+            {stats.consultations}
+          </p>
+        </div>
+
+        <div className="border rounded-lg p-6 shadow">
+          <h2 className="text-gray-500">
+            Reports
+          </h2>
+          <p className="text-3xl font-bold">
+            {stats.reports}
+          </p>
+        </div>
 
         <div className="border rounded-lg p-6 shadow">
           <h2 className="text-gray-500">

@@ -6,6 +6,9 @@ from app.db.deps import get_db
 from app.core.deps import get_current_user
 from app.models.organization import Organization
 from app.models.user import User
+from app.models.report import Report
+from app.models.consultation import Consultation
+from app.models.patient import Patient
 from app.models.upgrade_request import UpgradeRequest
 from app.models.patient import Patient
 from typing import Literal
@@ -77,6 +80,31 @@ def get_doctors(
 
     return doctors
 
+
+@router.get("/doctors/{doctor_id}/patients")
+def get_doctor_patients(
+    doctor_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "super_admin":
+        return {"detail": "Access denied"}
+
+    patient_ids = (
+        db.query(Consultation.patient_id)
+        .filter(Consultation.user_id == doctor_id)
+        .distinct()
+        .all()
+    )
+
+    patient_ids = [p[0] for p in patient_ids]
+
+    patients = db.query(Patient).filter(
+        Patient.patient_id.in_(patient_ids)
+    ).all()
+
+    return patients
+
 @router.get("/patients")
 def get_patients(
     db: Session = Depends(get_db),
@@ -87,7 +115,17 @@ def get_patients(
 
     return db.query(Patient).all()
 
+@router.get("/patients/{patient_id}/consultations")
+def get_patient_consultations(
+    patient_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    consultations = db.query(Consultation).filter(
+        Consultation.patient_id == patient_id
+    ).all()
 
+    return consultations
 
 
 class SubscriptionCreate(BaseModel):
@@ -364,6 +402,14 @@ def get_dashboard(
 
     patients = db.query(Patient).count()
 
+    consultations = db.query(
+            Consultation
+        ).count()
+
+    reports = db.query(
+            Report
+        ).count()
+
     subscriptions = db.query(
         OrganizationSubscription
     ).count()
@@ -375,9 +421,11 @@ def get_dashboard(
     ).count()
 
     return {
-        "organizations": organizations,
-        "doctors": doctors,
-        "patients": patients,
-        "subscriptions": subscriptions,
-        "pending_upgrade_requests": pending_requests
-    }
+    "organizations": organizations,
+    "doctors": doctors,
+    "patients": patients,
+    "consultations": consultations,
+    "reports": reports,
+    "subscriptions": subscriptions,
+    "pending_upgrade_requests": pending_requests
+}

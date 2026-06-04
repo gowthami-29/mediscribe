@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { adminApi } from '@/api/admin'
-
+import { useNavigate } from "react-router-dom";
 export default function Doctors() {
   const [doctors, setDoctors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
+const navigate = useNavigate()
   useEffect(() => {
     loadDoctors()
   }, [])
@@ -38,6 +38,7 @@ export default function Doctors() {
             <th className="border p-2">Role</th>
             <th className="border p-2">Status</th>
             <th className="border p-2">Organization</th>
+            <th className="border p-2">Actions</th>
           </tr>
         </thead>
 
@@ -63,6 +64,18 @@ export default function Doctors() {
               <td className="border p-2">
                 {doctor.organization_id}
               </td>
+              <td className="border p-2">
+  <button
+    className="bg-blue-500 text-white px-3 py-1 rounded"
+    onClick={() =>
+      navigate(
+        `/admin/doctors/${doctor.user_id}/patients`
+      )
+    }
+  >
+    View Patients
+  </button>
+</td>
             </tr>
           ))}
         </tbody>
