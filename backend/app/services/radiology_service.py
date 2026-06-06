@@ -10,7 +10,8 @@ if endpoint and ("azure.com" in endpoint or "cognitiveservices" in endpoint):
     client = openai.AzureOpenAI(
         api_key=api_key,
         api_version="2025-01-01-preview",
-        azure_endpoint=endpoint.split("/openai/")[0]
+        azure_endpoint=endpoint.split("/openai/")[0],
+        timeout=30.0
     )
     # Determine chat model from deployment path or default to gpt-5.4
     chat_model = "gpt-5.4"
@@ -18,7 +19,7 @@ if endpoint and ("azure.com" in endpoint or "cognitiveservices" in endpoint):
         chat_model = endpoint.split("deployments/")[1].split("/")[0]
     embedding_model = "text-embedding-3-small"
 else:
-    client = openai.OpenAI(api_key=api_key)
+    client = openai.OpenAI(api_key=api_key, timeout=30.0)
     chat_model = "gpt-4o"
     embedding_model = "text-embedding-3-small"
 

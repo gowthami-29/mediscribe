@@ -38,7 +38,10 @@ const navigate = useNavigate()
   }
 
   const handleCreate = async () => {
-    if (!form.name.trim()) { toast.error('Organization name is required'); return }
+    if (!form.name.trim() || form.name.length < 2) { toast.error('Organization name must be at least 2 characters'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error('Valid email is required'); return }
+    if (!form.password || form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
+    if (form.phone && !/^(?:\+91|91)?\d{10}$/.test(form.phone)) { toast.error('Phone must be a valid 10-digit Indian number (e.g. +919876543210)'); return }
     setSaving(true)
     try {
       await adminApi.createOrganization(form)
@@ -85,19 +88,25 @@ const navigate = useNavigate()
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 18, color: 'var(--text-1)' }}>Create Organization</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
             {[
-              { label: 'Organization Name *', key: 'name',  type: 'text'  },
-              { label: 'Email',               key: 'email', type: 'email' },
-              { label: 'Phone',               key: 'phone', type: 'tel'   },
-              { label: 'Password', key: 'password', type: 'password' }
-            ].map(({ label, key, type }) => (
+              { label: 'Organization Name *', key: 'name',  type: 'text', placeholder: 'e.g. Apollo Hospital' },
+              { label: 'Email *',               key: 'email', type: 'email', placeholder: 'admin@apollo.com' },
+              { label: 'Phone *',               key: 'phone', type: 'tel', placeholder: '9876543210', maxLength: 10 },
+              { label: 'Password *', key: 'password', type: 'password', placeholder: 'Min. 8 characters' }
+            ].map(({ label, key, type, placeholder, maxLength }) => (
               <div key={key}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</label>
                 <input
                   type={type}
+                  placeholder={placeholder}
+                  maxLength={maxLength}
                   className="form-control"
                   style={{ height: 38, fontSize: 13 }}
                   value={(form as any)[key]}
-                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  onChange={e => {
+                    let val = e.target.value;
+                    if (key === 'phone') val = val.replace(/\D/g, '').slice(0, 10);
+                    setForm(f => ({ ...f, [key]: val }));
+                  }}
                 />
               </div>
             ))}

@@ -579,3 +579,58 @@ def check_drug_interactions(medications: list):
     except Exception as e:
         print("DRUG ERROR:", str(e))
         return []
+
+
+def answer_patient_question(report_data: dict, question: str, history: list = None) -> str:
+    """
+    Takes a patient's medical report data and a question they asked,
+    and provides a clear, empathetic, jargon-free answer.
+    Also accepts previous chat history to maintain conversation context.
+    """
+    if not OPENAI_API_KEY or not ENDPOINT:
+        return "I'm sorry, the AI chat service is currently unavailable."
+
+    prompt = f"""
+    You are a compassionate, helpful medical AI assistant talking directly to a patient.
+    The patient is asking a question about their medical report.
+    
+    Here is the data from their medical report:
+    {json.dumps(report_data)}
+    
+    Instructions:
+    1. Answer the patient's question clearly, using simple, non-medical jargon.
+    2. Be empathetic and reassuring.
+    3. ONLY use the information provided in the medical report. Do not invent diagnoses or treatments.
+    4. If the answer is not in the report, gently let them know and advise them to consult their doctor.
+    5. Keep the response concise, informative, and formatted with simple paragraphs or bullet points if needed.
+    """
+
+    messages = [{"role": "system", "content": prompt}]
+    
+    if history:
+        for msg in history:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+            
+    messages.append({"role": "user", "content": question})
+
+    body = {
+        "messages": messages,
+        "temperature": 0.3,
+        "max_tokens": 800,
+    }
+
+    try:
+        response = _post_chat(body)
+        print("PATIENT CHAT STATUS:", response.status_code)
+
+        if response.status_code != 200:
+            print("PATIENT CHAT RESPONSE:", response.text)
+            return "I apologize, but I'm having trouble processing your request right now. Please try again later."
+
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
+
+    except Exception as e:
+        print("PATIENT CHAT ERROR:", str(e))
+        return "An error occurred while trying to answer your question. Please try again later."
+

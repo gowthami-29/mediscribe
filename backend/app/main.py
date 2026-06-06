@@ -84,6 +84,8 @@ from app.models.audit import AuditLog
 from app.models.subscription import OrganizationSubscription
 from app.models.radiology import RadiologyReport
 from app.models.document_embedding import DocumentEmbedding  # RAG embeddings table
+from app.models.upgrade_request import UpgradeRequest
+from app.models.patient_chat import PatientChatHistory
 
 # routers
 from app.api.auth import router as auth_router
