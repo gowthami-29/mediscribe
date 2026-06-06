@@ -39,8 +39,6 @@ updateSubscription: (
   getUpgradeRequests: () =>
   apiClient.get('/admin/upgrade-requests').then((r) => r.data),
 
-createUpgradeRequest: (data: any) =>
-  apiClient.post('/admin/upgrade-requests', data).then((r) => r.data),
 
 approveUpgradeRequest: (requestId: string) =>
   apiClient.put(
@@ -167,14 +165,14 @@ updateOrganizationSettings: (
     .get(`/admin/organizations/${organizationId}`)
     .then((r) => r.data),
 
-<<<<<<< HEAD
+
     createUpgradeRequest: (data: any) =>
   apiClient
     .post('/admin/upgrade-requests', data)
     .then((r) => r.data),
 
   
-=======
+
   resetOrganizationAdminPassword: (
     organizationId: string,
     password: string
@@ -183,6 +181,6 @@ updateOrganizationSettings: (
       `/admin/organizations/${organizationId}/reset-password`,
       { password }
     ).then((r) => r.data),
->>>>>>> d08d59924590742f8badee3837be6ceeeb507160
+
 }
 
