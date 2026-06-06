@@ -164,6 +164,11 @@ updateOrganizationSettings: (
     .get(`/admin/organizations/${organizationId}`)
     .then((r) => r.data),
 
+    createUpgradeRequest: (data: any) =>
+  apiClient
+    .post('/admin/upgrade-requests', data)
+    .then((r) => r.data),
+
   
 }
 
