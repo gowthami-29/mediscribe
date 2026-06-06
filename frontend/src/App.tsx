@@ -11,6 +11,7 @@ import Patients from '@/pages/admin/Patients'
 import Dashboard from "@/pages/admin/Dashboard";
 import Subscriptions from '@/pages/admin/Subscriptions'
 import Organizations from "@/pages/admin/Organizations";
+import OrganizationDetails from './pages/admin/OrganizationDetails'
 import Usage from '@/pages/admin/Usage'
 import Doctors from "@/pages/admin/Doctors";
 import RegisterPage from '@/pages/RegisterPage'
@@ -33,7 +34,16 @@ import RadiologyViewerPage from '@/pages/RadiologyViewerPage'
 import PatientDashboard from '@/pages/patient/PatientDashboard'
 import MyReportsPage from '@/pages/patient/MyReportsPage'
 import PatientReportPage from '@/pages/patient/PatientReportPage'
-
+import OrganizationLayout from '@/components/organization/OrganizationLayout'
+import OrganizationDashboard from '@/pages/organization/Dashboard'
+import OrganizationDoctors from '@/pages/organization/Doctors'
+import OrganizationPatients from '@/pages/organization/Patients'
+import OrganizationReports from '@/pages/organization/Reports'
+import OrganizationUsage from '@/pages/organization/Usage'
+import OrganizationSubscription from '@/pages/organization/Subscription'
+import OrganizationSettings from '@/pages/organization/Settings'
+import DoctorDetails
+from '@/pages/organization/DoctorDetails'
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
@@ -94,6 +104,10 @@ export default function App() {
       <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
       <Route index element={<Dashboard />} />
       <Route path="organizations" element={<Organizations />}/>
+      <Route
+  path="organizations/:organizationId"
+  element={<OrganizationDetails />}
+/>
       <Route path="doctors" element={<Doctors />}/>
       <Route
   path="doctors/:doctorId/patients"
@@ -133,6 +147,49 @@ export default function App() {
     </ProtectedRoute>
   }
 />
+
+<Route
+  path="/organization"
+  element={
+    <ProtectedRoute>
+      <OrganizationLayout />
+    </ProtectedRoute>
+  }
+>
+  <Route
+    index
+    element={<OrganizationDashboard />}
+  />
+
+  <Route
+    path="doctors"
+    element={<OrganizationDoctors />}
+  />
+  <Route
+  path="patients"
+  element={<OrganizationPatients />}
+/>
+<Route
+  path="reports"
+  element={<OrganizationReports />}
+/>
+<Route
+  path="usage"
+  element={<OrganizationUsage />}
+/>
+<Route
+  path="subscription"
+  element={<OrganizationSubscription />}
+/>
+<Route
+  path="settings"
+  element={<OrganizationSettings />}
+/>
+<Route
+  path="doctors/:doctorId"
+  element={<DoctorDetails />}
+ />
+</Route>
 
       
 

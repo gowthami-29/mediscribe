@@ -21,6 +21,7 @@ class PatientService:
         new_patient = Patient(
             **patient_data.dict(),
             user_id=user_id,
+            doctor_id=user_id,
             organization_id=organization_id
         )
         db.add(new_patient)
@@ -29,17 +30,34 @@ class PatientService:
         return new_patient
 
     @staticmethod
-    def get_patients(db: Session, organization_id: str, search: Optional[str] = None) -> List[Patient]:
+    def get_patients(
+        db: Session,
+        current_user,
+        search: Optional[str] = None
+    ):
         query = db.query(Patient).filter(
-            Patient.organization_id == organization_id,
             Patient.deleted_at == None
         )
+
+        if current_user.role == "practitioner":
+            query = query.filter(
+                Patient.doctor_id ==
+                current_user.user_id
+            )
+
+        elif current_user.role == "organization_admin":
+            query = query.filter(
+                Patient.organization_id ==
+                current_user.organization_id
+            )
+
         if search:
             query = query.filter(
-                (Patient.first_name.ilike(f"%{search}%")) | 
+                (Patient.first_name.ilike(f"%{search}%")) |
                 (Patient.last_name.ilike(f"%{search}%")) |
                 (Patient.medical_id.ilike(f"%{search}%"))
             )
+
         return query.all()
 
     @staticmethod

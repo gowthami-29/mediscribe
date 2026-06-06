@@ -26,7 +26,9 @@ def get_patients(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    return PatientService.get_patients(db, current_user.organization_id, search)
+    return PatientService.get_patients( db,
+        current_user,
+        search)
 
 @router.get("/{patient_id}", response_model=Patient)
 def get_patient(
@@ -60,4 +62,4 @@ def delete_patient(
     success = PatientService.delete_patient(db, patient_id, current_user.organization_id)
     if not success:
         raise HTTPException(status_code=404, detail="Patient not found")
-    return {"message": "Patient archived successfully"}
+    return {"message": "Patient archived successfully"}

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from pydantic import BaseModel
+from app.core.security import hash_password
 from app.db.deps import get_db
 from app.core.deps import get_current_user
 from app.models.organization import Organization
@@ -18,10 +19,10 @@ router = APIRouter()
 class OrganizationCreate(BaseModel):
     name: str
     email: str
+    password: str
     phone: str | None = None
     subscription_plan: str = "basic"
     max_users: int = 10
-
 
 @router.get("/organizations")
 def get_organizations(
@@ -43,28 +44,68 @@ def create_organization(
     current_user=Depends(get_current_user)
 ):
     if current_user.role != "super_admin":
-        return {"detail": "Access denied"}
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
 
-    existing = db.query(Organization).filter(
+    # Check organization email already exists
+    existing_org = db.query(Organization).filter(
         Organization.email == payload.email
     ).first()
 
-    if existing:
-        return {"detail": "Organization already exists"}
+    if existing_org:
+        raise HTTPException(
+            status_code=400,
+            detail="Organization already exists"
+        )
 
+    # Check user email already exists
+    existing_user = db.query(User).filter(
+        User.email == payload.email
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already exists"
+        )
+
+    # Create Organization
     organization = Organization(
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
         subscription_plan=payload.subscription_plan,
-        max_users=payload.max_users
+        max_users=payload.max_users,
+        billing_status="active"
     )
 
     db.add(organization)
     db.commit()
     db.refresh(organization)
 
-    return organization
+    # Create Organization Admin automatically
+    admin_user = User(
+        full_name=f"{payload.name} Admin",
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+        role="organization_admin",
+        organization_id=organization.organization_id,
+        status="active",
+        email_verified=True
+    )
+
+    db.add(admin_user)
+    db.commit()
+    db.refresh(admin_user)
+
+    return {
+        "message": "Organization created successfully",
+        "organization_id": organization.organization_id,
+        "admin_user_id": admin_user.user_id,
+        "admin_email": admin_user.email
+    }
 
 @router.get("/doctors")
 def get_doctors(
@@ -429,3 +470,632 @@ def get_dashboard(
     "subscriptions": subscriptions,
     "pending_upgrade_requests": pending_requests
 }
+
+
+
+
+class OrganizationAdminCreate(BaseModel):
+    full_name: str
+    email: str
+    password: str
+
+
+@router.post("/organizations/{organization_id}/create-admin")
+def create_organization_admin(
+    organization_id: str,
+    payload: OrganizationAdminCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    organization = db.query(
+        Organization
+    ).filter(
+        Organization.organization_id == organization_id
+    ).first()
+
+    if not organization:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found"
+        )
+
+    existing = db.query(User).filter(
+        User.email == payload.email
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already exists"
+        )
+
+    user = User(
+        full_name=payload.full_name,
+        email=payload.email,
+        password_hash=hash_password(
+    payload.password
+),
+        role="organization_admin",
+        organization_id=organization_id,
+        status="active",
+        email_verified=True
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return user
+
+
+@router.get("/organization/dashboard")
+def organization_dashboard(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    doctors = db.query(User).filter(
+        User.organization_id == current_user.organization_id,
+        User.role == "practitioner"
+    ).count()
+
+    patients = db.query(Patient).filter(
+        Patient.organization_id == current_user.organization_id
+    ).count()
+
+    reports = db.query(Report).filter(
+    Report.organization_id ==
+    current_user.organization_id
+).count()
+
+    return {
+        "doctors": doctors,
+        "patients": patients,
+        "reports": reports
+    }
+
+
+@router.get("/organization/doctors")
+def get_organization_doctors(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    doctors = db.query(User).filter(
+        User.organization_id ==
+        current_user.organization_id,
+        User.role == "practitioner"
+    ).all()
+
+    return doctors
+
+
+@router.put("/organization/doctors/{doctor_id}/status")
+def update_doctor_status(
+    doctor_id: str,
+    status: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    doctor = db.query(User).filter(
+        User.user_id == doctor_id,
+        User.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found"
+        )
+
+    doctor.status = status
+
+    db.commit()
+
+    return {
+        "message": "Doctor updated"
+    }
+
+@router.get("/organization/patients")
+def get_organization_patients(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    patients = db.query(Patient).filter(
+        Patient.organization_id ==
+        current_user.organization_id
+    ).all()
+
+    return patients
+
+
+
+
+
+@router.get("/organization/reports")
+def get_organization_reports(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    reports = (
+        db.query(Report)
+        .join(
+            Patient,
+            Report.patient_id == Patient.patient_id
+        )
+        .filter(
+            Patient.organization_id ==
+            current_user.organization_id
+        )
+        .order_by(
+            Report.created_at.desc()
+        )
+        .all()
+    )
+
+    return reports
+
+
+from app.models.user import User
+from app.models.patient import Patient
+from app.models.report import Report
+from app.models.consultation import Consultation
+
+@router.get("/organization/usage")
+def get_organization_usage(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    doctors = db.query(User).filter(
+        User.organization_id == current_user.organization_id,
+        User.role == "practitioner"
+    ).count()
+
+    patients = db.query(Patient).filter(
+        Patient.organization_id == current_user.organization_id
+    ).count()
+
+    consultations = (
+        db.query(Consultation)
+        .join(
+            Patient,
+            Consultation.patient_id == Patient.patient_id
+        )
+        .filter(
+            Patient.organization_id ==
+            current_user.organization_id
+        )
+        .count()
+    )
+
+    reports = (
+        db.query(Report)
+        .join(
+            Patient,
+            Report.patient_id == Patient.patient_id
+        )
+        .filter(
+            Patient.organization_id ==
+            current_user.organization_id
+        )
+        .count()
+    )
+
+    return {
+        "doctors": doctors,
+        "patients": patients,
+        "consultations": consultations,
+        "reports": reports
+    }
+
+from app.models.organization import Organization
+
+@router.get("/organization/subscription")
+def get_organization_subscription(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    organization = db.query(
+        Organization
+    ).filter(
+        Organization.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    return {
+        "name": organization.name,
+        "plan": organization.subscription_plan,
+        "billing_status": organization.billing_status,
+        "max_users": organization.max_users
+    }
+
+class CreateDoctorRequest(BaseModel):
+    full_name: str
+    email: str
+    password: str
+
+    phone: str
+    license_number: str
+
+    specialization: str
+    department: str
+@router.post("/organization/doctors")
+def create_organization_doctor(
+    payload: CreateDoctorRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    existing = db.query(User).filter(
+        User.email == payload.email
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already exists"
+        )
+
+    doctor = User(
+          full_name=payload.full_name,
+            email=payload.email,
+            phone=payload.phone,
+
+            license_number=payload.license_number,
+
+            specialization=payload.specialization,
+            department=payload.department,
+
+            password_hash=hash_password(
+                payload.password
+        ),
+        role="practitioner",
+        organization_id=
+        current_user.organization_id,
+        status="active",
+        email_verified=True
+    )
+
+    db.add(doctor)
+    db.commit()
+    db.refresh(doctor)
+
+    return doctor
+
+@router.get("/organization/settings")
+def get_organization_settings(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    organization = db.query(
+        Organization
+    ).filter(
+        Organization.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    return organization
+
+@router.put("/organization/settings")
+def update_organization_settings(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    organization = db.query(
+        Organization
+    ).filter(
+        Organization.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    organization.name = payload["name"]
+    organization.email = payload["email"]
+    organization.phone = payload["phone"]
+
+    db.commit()
+
+    return {"message": "Updated"}
+
+from app.models.patient import Patient
+from app.models.report import Report
+
+from app.models.patient import Patient
+from app.models.report import Report
+
+@router.get("/organization/doctors/{doctor_id}")
+def get_doctor_details(
+    doctor_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    doctor = db.query(User).filter(
+        User.user_id == doctor_id,
+        User.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found"
+        )
+
+    patient_count = db.query(Patient).filter(
+        Patient.doctor_id == doctor_id,
+        Patient.deleted_at == None
+    ).count()
+
+    report_count = db.query(Report).filter(
+        Report.user_id == doctor_id
+    ).count()
+
+    return {
+        "user_id": doctor.user_id,
+        "full_name": doctor.full_name,
+        "email": doctor.email,
+        "phone": doctor.phone,
+        "license_number": doctor.license_number,
+        "department": getattr(doctor, "department", None),
+        "specialization": getattr(doctor, "specialization", None),
+        "status": doctor.status,
+        "role": doctor.role,
+        "created_at": doctor.created_at,
+
+        "patient_count": patient_count,
+        "consultation_count": report_count,  # temporary
+        "report_count": report_count
+    }
+@router.put(
+    "/organization/doctors/{doctor_id}"
+)
+def update_doctor(
+    doctor_id: str,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    doctor = db.query(User).filter(
+        User.user_id == doctor_id,
+        User.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found"
+        )
+
+    doctor.phone = payload.get(
+        "phone",
+        doctor.phone
+    )
+
+    doctor.specialization = payload.get(
+        "specialization",
+        doctor.specialization
+    )
+
+    doctor.department = payload.get(
+        "department",
+        doctor.department
+    )
+
+    db.commit()
+
+    return {
+        "message": "Doctor updated"
+    }
+
+class ResetDoctorPasswordRequest(BaseModel):
+    password: str
+
+@router.put(
+    "/organization/doctors/{doctor_id}/reset-password"
+)
+def reset_doctor_password(
+    doctor_id: str,
+    payload: ResetDoctorPasswordRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    doctor = db.query(User).filter(
+        User.user_id == doctor_id,
+        User.organization_id ==
+        current_user.organization_id
+    ).first()
+
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found"
+        )
+
+    doctor.password_hash = hash_password(
+        payload.password
+    )
+
+    db.commit()
+
+    return {
+        "message":
+        "Password reset successfully"
+    }
+
+@router.get("/organization/patients")
+def get_organization_patients(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    patients = db.query(Patient).filter(
+        Patient.organization_id ==
+        current_user.organization_id
+    ).all()
+
+    return patients
+
+
+
+from pydantic import BaseModel
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+from app.core.security import (
+    verify_password,
+    hash_password
+)
+
+@router.put("/organization/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "organization_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied"
+        )
+
+    user = db.query(User).filter(
+        User.user_id == current_user.user_id
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    if not verify_password(
+        payload.current_password,
+        user.password_hash
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is incorrect"
+        )
+
+    user.password_hash = hash_password(
+        payload.new_password
+    )
+
+    db.commit()
+
+    return {
+        "message": "Password changed successfully"
+    }
+
+from app.models.organization import Organization
+from app.models.user import User
+from app.models.patient import Patient
+from app.models.consultation import Consultation
+from app.models.report import Report
+from app.core.roles import require_role
+@router.get("/organizations/{organization_id}")
+def get_organization_details(
+    organization_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(["super_admin"]))
+):
+    organization = db.query(Organization).filter(
+        Organization.organization_id == organization_id
+    ).first()
+
+    if not organization:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found"
+        )
+
+    doctor_count = db.query(User).filter(
+        User.organization_id == organization_id,
+        User.role == "practitioner"
+    ).count()
+
+    patient_count = db.query(Patient).filter(
+        Patient.organization_id == organization_id
+    ).count()
+
+    consultation_count = db.query(Consultation).filter(
+        Consultation.organization_id == organization_id
+    ).count()
+
+    report_count = db.query(Report).filter(
+        Report.organization_id == organization_id
+    ).count()
+
+    doctors = db.query(User).filter(
+        User.organization_id == organization_id,
+        User.role == "practitioner"
+    ).all()
+
+    return {
+        "organization": organization,
+        "doctor_count": doctor_count,
+        "patient_count": patient_count,
+        "consultation_count": consultation_count,
+        "report_count": report_count,
+        "doctors": doctors
+    }

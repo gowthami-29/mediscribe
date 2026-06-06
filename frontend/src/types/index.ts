@@ -5,7 +5,7 @@ export interface User {
   full_name: string
   license_number: string
   organization_id: string
-  role: 'admin' | 'practitioner' | 'supervisor' | 'viewer' | 'super_admin' | 'patient'
+  role: 'admin' | 'practitioner' | 'supervisor' | 'viewer' | 'super_admin' | 'patient' | 'organization_admin'
   status: 'active' | 'inactive' | 'suspended' | 'pending_verification'
   twofa_enabled: boolean
   timezone: string

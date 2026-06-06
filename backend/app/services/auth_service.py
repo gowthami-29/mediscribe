@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 import string
 import secrets
@@ -143,7 +143,10 @@ class AuthService:
                 raise HTTPException(status_code=401, detail="Invalid credentials")
 
             # ---------------- ACCOUNT LOCK CHECK ----------------
-            if db_user.locked_until and db_user.locked_until > datetime.utcnow():
+            if (
+                db_user.locked_until
+                and db_user.locked_until > datetime.now(timezone.utc)
+            ):
                 raise HTTPException(
                     status_code=403,
                     detail="Account locked. Please try again later."
@@ -163,7 +166,10 @@ class AuthService:
                 db_user.failed_login_attempts += 1
 
                 if db_user.failed_login_attempts >= 5:
-                    db_user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                    db_user.locked_until = (
+    datetime.now(timezone.utc)
+    + timedelta(minutes=15)
+)
 
                 db.commit()
 

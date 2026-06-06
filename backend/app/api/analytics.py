@@ -16,7 +16,7 @@ def get_analytics_summary(
 ):
     return AnalyticsService.get_dashboard_stats(
         db,
-        current_user.organization_id,
+        current_user,
         period
     )
 

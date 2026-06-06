@@ -53,19 +53,44 @@ class ConsultationService:
             db.rollback()
             raise e
 
-    @staticmethod
-    def get_consultations(db: Session, organization_id: str, patient_id: Optional[str] = None) -> List[Consultation]:
-        query = db.query(Consultation).filter(Consultation.organization_id == organization_id)
-        if patient_id:
-            query = query.filter(Consultation.patient_id == patient_id)
-        return query.order_by(Consultation.created_at.desc()).all()
 
     @staticmethod
-    def get_consultation_by_id(db: Session, consultation_id: str, organization_id: str):
-        return db.query(Consultation).filter(
-            Consultation.consultation_id == consultation_id,
-            Consultation.organization_id == organization_id
-        ).first()
+    def get_consultations(
+        db: Session,
+        current_user,
+        patient_id: Optional[str] = None
+    ):
+        query = db.query(Consultation)
+
+        # Doctor sees only their consultations
+        if current_user.role == "practitioner":
+            query = query.filter(
+                Consultation.user_id ==
+                current_user.user_id
+            )
+
+        # Organization Admin / Admin see organization consultations
+        else:
+            query = query.filter(
+                Consultation.organization_id ==
+                current_user.organization_id
+            )
+
+        # Optional patient filter
+        if patient_id:
+            query = query.filter(
+                Consultation.patient_id == patient_id
+            )
+
+        return query.order_by(
+            Consultation.created_at.desc()
+        ).all()
+        @staticmethod
+        def get_consultation_by_id(db: Session, consultation_id: str, organization_id: str):
+            return db.query(Consultation).filter(
+                Consultation.consultation_id == consultation_id,
+                Consultation.organization_id == organization_id
+            ).first()
 
     @staticmethod
     def start_consultation(db: Session, consultation_id: str, organization_id: str):
@@ -390,3 +415,27 @@ class ConsultationService:
             print("DELETE ERROR:", str(e))
 
             return False
+        
+
+    @staticmethod
+    def get_consultation_by_id(
+        db: Session,
+        consultation_id: str,
+        current_user
+    ):
+        query = db.query(Consultation).filter(
+            Consultation.consultation_id == consultation_id
+        )
+
+        if current_user.role == "practitioner":
+            query = query.filter(
+                Consultation.user_id ==
+                current_user.user_id
+            )
+        else:
+            query = query.filter(
+                Consultation.organization_id ==
+                current_user.organization_id
+            )
+
+        return query.first()

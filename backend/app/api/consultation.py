@@ -30,6 +30,7 @@ router = APIRouter()
 
 
 # GET CONSULTATIONS
+
 @router.get("")
 def list_consultations(
     db: Session = Depends(get_db),
@@ -37,7 +38,11 @@ def list_consultations(
     patient_id: Optional[str] = None,
     limit: int = 10
 ):
-    return ConsultationService.get_consultations(db, current_user.organization_id, patient_id)
+    return ConsultationService.get_consultations(
+        db,
+        current_user,
+        patient_id
+    )
 
 # CREATE CONSULTATION
 @router.post("")
@@ -58,8 +63,10 @@ def get_consultation(
     current_user=Depends(get_current_user)
 ):
     consultation = ConsultationService.get_consultation_by_id(
-        db, consultation_id, current_user.organization_id
-    )
+    db,
+    consultation_id,
+    current_user
+)
     if not consultation:
         raise HTTPException(status_code=404, detail="Consultation not found")
     return consultation

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminApi } from '@/api/admin'
 import { Building2, Plus, X, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-
+import { useNavigate } from 'react-router-dom'
 const PLAN_COLORS: Record<string, { color: string; bg: string }> = {
   basic:      { color: '#2563eb', bg: '#eff6ff' },
   premium:    { color: '#7c3aed', bg: '#f5f3ff' },
@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   suspended: { color: '#e11d48', bg: '#fff1f2' },
 }
 
-const EMPTY_FORM = { name: '', email: '', phone: '', subscription_plan: 'basic', max_users: 10 }
+const EMPTY_FORM = { name: '', email: '', phone: '', subscription_plan: 'basic', max_users: 10 ,password: '' }
 
 export default function Organizations() {
   const [organizations, setOrganizations] = useState<any[]>([])
@@ -22,7 +22,7 @@ export default function Organizations() {
   const [showForm, setShowForm]           = useState(false)
   const [saving, setSaving]               = useState(false)
   const [form, setForm]                   = useState(EMPTY_FORM)
-
+const navigate = useNavigate()
   useEffect(() => { loadOrganizations() }, [])
 
   const loadOrganizations = async () => {
@@ -88,6 +88,7 @@ export default function Organizations() {
               { label: 'Organization Name *', key: 'name',  type: 'text'  },
               { label: 'Email',               key: 'email', type: 'email' },
               { label: 'Phone',               key: 'phone', type: 'tel'   },
+              { label: 'Password', key: 'password', type: 'password' }
             ].map(({ label, key, type }) => (
               <div key={key}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</label>
@@ -155,7 +156,23 @@ export default function Organizations() {
                   const ps = planStyle(org.subscription_plan)
                   const ss = statusStyle(org.billing_status)
                   return (
-                    <tr key={org.organization_id}>
+                    <tr
+  key={org.organization_id}
+  onClick={() =>
+    navigate(
+      `/admin/organizations/${org.organization_id}`
+    )
+  }
+  style={{
+    cursor: 'pointer'
+  }}
+  onMouseEnter={(e) =>
+    e.currentTarget.style.backgroundColor = '#f8fafc'
+  }
+  onMouseLeave={(e) =>
+    e.currentTarget.style.backgroundColor = ''
+  }
+>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 34, height: 34, borderRadius: 9, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

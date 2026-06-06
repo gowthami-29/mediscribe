@@ -145,3 +145,14 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True
     )
+
+
+    specialization = Column(
+    String(255),
+    nullable=True
+    )
+
+    department = Column(
+        String(255),
+        nullable=True
+    )

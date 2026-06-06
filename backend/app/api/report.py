@@ -54,7 +54,16 @@ def list_reports(
 ):
     """List all reports for the current user's organization, newest first."""
     try:
-        query = db.query(Report).filter(Report.organization_id == current_user.organization_id)
+        if current_user.role == "practitioner":
+            query = db.query(Report).filter(
+                Report.user_id ==
+                current_user.user_id
+            )
+        else:
+            query = db.query(Report).filter(
+                Report.organization_id ==
+                current_user.organization_id
+            )
         if patient_id:
             query = query.filter(Report.patient_id == patient_id)
         
@@ -70,11 +79,28 @@ def get_report_by_consultation(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    report = ReportService.get_report_by_consultation(
-        db, consultation_id, current_user.organization_id
+    query = db.query(Report).filter(
+        Report.consultation_id == consultation_id
     )
+
+    if current_user.role == "practitioner":
+        query = query.filter(
+            Report.user_id == current_user.user_id
+        )
+    else:
+        query = query.filter(
+            Report.organization_id ==
+            current_user.organization_id
+        )
+
+    report = query.first()
+
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Report not found"
+        )
+
     return _serialize_report(report)
 
 @router.get("/{report_id}")
@@ -83,10 +109,23 @@ def get_report(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    report = db.query(Report).filter(
-        Report.report_id == report_id,
-        Report.organization_id == current_user.organization_id
-    ).first()
+    
+    query = db.query(Report).filter(
+        Report.report_id == report_id
+    )
+
+    if current_user.role == "practitioner":
+        query = query.filter(
+            Report.user_id ==
+            current_user.user_id
+        )
+    else:
+        query = query.filter(
+            Report.organization_id ==
+            current_user.organization_id
+        )
+
+    report = query.first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     return _serialize_report(report)
@@ -190,10 +229,22 @@ def sign_report(
         require_role(["admin", "practitioner"])
     )
 ):
-    report = db.query(Report).filter(
-        Report.report_id == report_id,
-        Report.organization_id == current_user.organization_id
-    ).first()
+    query = db.query(Report).filter(
+        Report.report_id == report_id
+    )
+
+    if current_user.role == "practitioner":
+        query = query.filter(
+            Report.user_id ==
+            current_user.user_id
+        )
+    else:
+        query = query.filter(
+            Report.organization_id ==
+            current_user.organization_id
+        )
+
+    report = query.first()
 
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -235,10 +286,22 @@ def delete_report(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    report = db.query(Report).filter(
-        Report.report_id == report_id,
-        Report.organization_id == current_user.organization_id
-    ).first()
+    query = db.query(Report).filter(
+        Report.report_id == report_id
+    )
+
+    if current_user.role == "practitioner":
+        query = query.filter(
+            Report.user_id ==
+            current_user.user_id
+        )
+    else:
+        query = query.filter(
+            Report.organization_id ==
+            current_user.organization_id
+        )
+
+    report = query.first()
 
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")

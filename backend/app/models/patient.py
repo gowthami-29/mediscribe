@@ -29,7 +29,11 @@ class Patient(Base):
         ForeignKey("users.user_id"),
         nullable=False
     )
-
+    doctor_id = Column(
+    String,
+    ForeignKey("users.user_id"),
+    nullable=True
+    )
     organization_id = Column(
         String,
         ForeignKey("organizations.organization_id"),

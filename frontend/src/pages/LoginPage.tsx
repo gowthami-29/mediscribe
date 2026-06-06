@@ -13,13 +13,16 @@ export default function LoginPage() {
 useEffect(() => {
   if (isAuthenticated) {
     if (user?.role === 'super_admin') {
-        navigate('/admin', { replace: true })
+        navigate('/admin')
       }
-    else if (user?.role === 'patient') {
-        navigate('/patient/dashboard', { replace: true })
+      else if (user?.role === 'organization_admin') {
+        navigate('/organization')
       }
-    else {
-        navigate('/app/dashboard', { replace: true })
+      else if (user?.role === 'patient') {
+        navigate('/patient/dashboard')
+      }
+      else {
+        navigate('/app/dashboard')
       }
   }
 }, [isAuthenticated, user, navigate])

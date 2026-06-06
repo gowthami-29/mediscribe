@@ -9,44 +9,84 @@ class AnalyticsService:
     @staticmethod
     def get_dashboard_stats(
     db: Session,
-    organization_id: str,
+    current_user,
     period: str = "30d"
 ):
+        organization_id = current_user.organization_id
         # Total Patients
-        total_patients = db.query(Patient).filter(
-            Patient.organization_id == organization_id,
-            Patient.deleted_at == None
-        ).count()
+        if current_user.role == "practitioner":
+            total_patients = db.query(Patient).filter(
+                Patient.doctor_id == current_user.user_id,
+                Patient.deleted_at == None
+            ).count()
+        else:
+            total_patients = db.query(Patient).filter(
+                Patient.organization_id == current_user.organization_id,
+                Patient.deleted_at == None
+            ).count()
 
         # Total Consultations
-        total_consultations = db.query(Consultation).filter(
-            Consultation.organization_id == organization_id
-        ).count()
+        if current_user.role == "practitioner":
+            total_consultations = db.query(Consultation).filter(
+                Consultation.user_id == current_user.user_id
+            ).count()
+        else:
+            total_consultations = db.query(Consultation).filter(
+                Consultation.organization_id == organization_id
+            ).count()
 
         # Consultations this month
         start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        monthly_consultations = db.query(Consultation).filter(
-            Consultation.organization_id == organization_id,
-            Consultation.created_at >= start_of_month
-        ).count()
-
+        # Consultations this month
+        if current_user.role == "practitioner":
+            monthly_consultations = db.query(Consultation).filter(
+                Consultation.user_id == current_user.user_id,
+                Consultation.created_at >= start_of_month
+            ).count()
+        else:
+            monthly_consultations = db.query(Consultation).filter(
+                Consultation.organization_id == organization_id,
+                Consultation.created_at >= start_of_month
+            ).count()
         # Pending Reports
-        pending_reports = db.query(Report).filter(
-            Report.organization_id == organization_id,
-            Report.status == "draft"
-        ).count()
+        if current_user.role == "practitioner":
+            pending_reports = db.query(Report).filter(
+                Report.user_id == current_user.user_id,
+                Report.status == "draft"
+            ).count()
+        else:
+            pending_reports = db.query(Report).filter(
+                Report.organization_id == organization_id,
+                Report.status == "draft"
+            ).count()
         
         # Reports Exported (Signed/Approved)
-        reports_exported = db.query(Report).filter(
-            Report.organization_id == organization_id,
-            Report.status.in_(["approved", "signed"])
-        ).count()
+        if current_user.role == "practitioner":
+            reports_exported = db.query(Report).filter(
+                Report.user_id == current_user.user_id,
+                Report.status.in_(["approved", "signed"])
+            ).count()
+        else:
+            reports_exported = db.query(Report).filter(
+                Report.organization_id == organization_id,
+                Report.status.in_(["approved", "signed"])
+            ).count()
 
         # Avg Consultation Duration
-        avg_duration = db.query(func.avg(Consultation.duration_minutes)).filter(
-            Consultation.organization_id == organization_id,
-            Consultation.duration_minutes != None
-        ).scalar() or 0
+        if current_user.role == "practitioner":
+            avg_duration = db.query(
+                func.avg(Consultation.duration_minutes)
+            ).filter(
+                Consultation.user_id == current_user.user_id,
+                Consultation.duration_minutes != None
+            ).scalar() or 0
+        else:
+            avg_duration = db.query(
+                func.avg(Consultation.duration_minutes)
+            ).filter(
+                Consultation.organization_id == organization_id,
+                Consultation.duration_minutes != None
+            ).scalar() or 0
 
         return {
             "total_patients": total_patients,
