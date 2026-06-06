@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.core.security import hash_password
 from app.db.deps import get_db
 from app.core.deps import get_current_user
@@ -17,12 +17,12 @@ from app.models.subscription import OrganizationSubscription
 router = APIRouter()
 
 class OrganizationCreate(BaseModel):
-    name: str
-    email: str
-    password: str
-    phone: str | None = None
+    name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+    password: str = Field(..., min_length=8)
+    phone: str | None = Field(None, pattern=r"^(?:\+91|91)?\d{10}$")
     subscription_plan: str = "basic"
-    max_users: int = 10
+    max_users: int = Field(10, gt=0)
 
 @router.get("/organizations")
 def get_organizations(
@@ -103,7 +103,9 @@ def create_organization(
     return {
         "message": "Organization created successfully",
         "organization_id": organization.organization_id,
+        "organization_name": organization.name,
         "admin_user_id": admin_user.user_id,
+        "admin_name": admin_user.full_name,
         "admin_email": admin_user.email
     }
 
@@ -525,9 +527,9 @@ def get_dashboard(
 
 
 class OrganizationAdminCreate(BaseModel):
-    full_name: str
-    email: str
-    password: str
+    full_name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+    password: str = Field(..., min_length=8)
 
 
 @router.post("/organizations/{organization_id}/create-admin")
@@ -807,12 +809,12 @@ def get_organization_subscription(
     }
 
 class CreateDoctorRequest(BaseModel):
-    full_name: str
-    email: str
-    password: str
+    full_name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., pattern=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+    password: str = Field(..., min_length=8)
 
-    phone: str
-    license_number: str
+    phone: str = Field(..., pattern=r"^(?:\+91|91)?\d{10}$")
+    license_number: str = Field(..., min_length=3)
 
     specialization: str
     department: str
@@ -861,8 +863,14 @@ def create_organization_doctor(
     db.add(doctor)
     db.commit()
     db.refresh(doctor)
-
-    return doctor
+    return {
+        "message": "Doctor created successfully",
+        "doctor_id": doctor.user_id,
+        "doctor_name": doctor.full_name,
+        "email": doctor.email,
+        "phone": doctor.phone,
+        "license_number": doctor.license_number
+    }
 
 @router.get("/organization/settings")
 def get_organization_settings(

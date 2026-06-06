@@ -60,7 +60,7 @@ class RadiologyReport(Base):
 
     status = Column(Text, default="DRAFT")
 
-    embedding = Column(Text, nullable=True)  # pgvector Vector(1536) on PostgreSQL
+    embedding = Column(_VECTOR_TYPE, nullable=True)
 
     created_at = Column(
         DateTime,

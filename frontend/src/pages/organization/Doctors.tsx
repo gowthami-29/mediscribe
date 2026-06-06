@@ -44,10 +44,12 @@ export default function OrganizationDoctors() {
   }
 
   const createDoctor = async () => {
-    if (!doctor.full_name || !doctor.email || !doctor.password) {
-      toast.error('Please fill all required fields')
-      return
-    }
+    if (!doctor.full_name.trim() || doctor.full_name.length < 2) { toast.error('Doctor name must be at least 2 characters'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(doctor.email)) { toast.error('Valid email is required'); return }
+    if (!doctor.password || doctor.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
+    if (!/^(?:\+91|91)?\d{10}$/.test(doctor.phone)) { toast.error('Phone must be a valid 10-digit Indian number (e.g. +919876543210)'); return }
+    if (!doctor.license_number || doctor.license_number.length < 3) { toast.error('License number must be at least 3 characters'); return }
+    
     setSaving(true)
     try {
       await adminApi.createOrganizationDoctor(doctor)
@@ -94,22 +96,28 @@ export default function OrganizationDoctors() {
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             {[
-              { label: 'Full Name *', key: 'full_name', type: 'text' },
-              { label: 'Email *', key: 'email', type: 'email' },
-              { label: 'Password *', key: 'password', type: 'password' },
-              { label: 'Phone', key: 'phone', type: 'tel' },
-              { label: 'License Number', key: 'license_number', type: 'text' },
-              { label: 'Specialization', key: 'specialization', type: 'text' },
-              { label: 'Department', key: 'department', type: 'text' },
-            ].map(({ label, key, type }) => (
+              { label: 'Full Name *', key: 'full_name', type: 'text', placeholder: 'Dr. Jane Smith' },
+              { label: 'Email *', key: 'email', type: 'email', placeholder: 'doctor@clinic.com' },
+              { label: 'Password *', key: 'password', type: 'password', placeholder: 'Min. 8 characters' },
+              { label: 'Phone *', key: 'phone', type: 'tel', placeholder: '9876543210', maxLength: 10 },
+              { label: 'License Number *', key: 'license_number', type: 'text', placeholder: 'MCI-12345' },
+              { label: 'Specialization', key: 'specialization', type: 'text', placeholder: 'e.g. Cardiology' },
+              { label: 'Department', key: 'department', type: 'text', placeholder: 'e.g. Cardiology Dept' },
+            ].map(({ label, key, type, placeholder, maxLength }) => (
               <div key={key}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</label>
                 <input
                   type={type}
+                  placeholder={placeholder}
+                  maxLength={maxLength}
                   className="form-control"
                   style={{ height: 38, fontSize: 13 }}
                   value={(doctor as any)[key]}
-                  onChange={(e) => setDoctor({ ...doctor, [key]: e.target.value })}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (key === 'phone') val = val.replace(/\D/g, '').slice(0, 10);
+                    setDoctor({ ...doctor, [key]: val });
+                  }}
                 />
               </div>
             ))}
