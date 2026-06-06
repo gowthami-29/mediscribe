@@ -51,6 +51,7 @@ const ProfileSettings: React.FC = () => {
     phone: '',
     timezone: 'UTC',
     language_preference: 'en',
+    signature_url: '',
   });
 
   useEffect(() => {
@@ -60,6 +61,7 @@ const ProfileSettings: React.FC = () => {
         phone: (effectiveUser as any).phone ?? '',
         timezone: (effectiveUser as any).timezone ?? 'UTC',
         language_preference: (effectiveUser as any).language_preference ?? 'en',
+        signature_url: (effectiveUser as any).signature_url ?? '',
       });
     }
   }, [effectiveUser]);
@@ -216,6 +218,29 @@ const ProfileSettings: React.FC = () => {
             <option value="es">Spanish</option>
             <option value="fr">French</option>
           </select>
+        </div>
+
+        {/* Signature URL */}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={labelStyle}>Digital Signature (URL or Base64)</label>
+          <input
+            value={formData.signature_url}
+            onChange={(e) => setFormData({ ...formData, signature_url: e.target.value })}
+            style={inputStyle}
+            placeholder="https://... or data:image/png;base64,..."
+            className="form-control"
+            onFocus={(e) => {
+              e.target.style.borderColor = 'var(--teal)';
+              e.target.style.boxShadow = '0 0 0 3px var(--teal-glow)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'var(--border)';
+              e.target.style.boxShadow = 'none';
+            }}
+          />
+          <p style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 4 }}>
+            Provide an image URL or Base64 string for your signature to automatically apply it to reports.
+          </p>
         </div>
 
         {/* Actions row */}

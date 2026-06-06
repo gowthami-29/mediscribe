@@ -146,13 +146,17 @@ class User(Base):
         nullable=True
     )
 
-
     specialization = Column(
-    String(255),
-    nullable=True
+        String(255),
+        nullable=True
     )
 
     department = Column(
         String(255),
+        nullable=True
+    )
+
+    signature_url = Column(
+        String,
         nullable=True
     )

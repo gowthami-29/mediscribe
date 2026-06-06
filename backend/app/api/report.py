@@ -35,6 +35,8 @@ def _serialize_report(r: Report) -> dict:
         "objective": r.objective,
         "assessment": r.assessment,
         "plan": r.plan,
+        "report_type": r.report_type,
+        "content": r.content,
         "medications": r.medications,
         "key_entities": r.key_entities,
         "follow_up_needed": r.follow_up_needed,
@@ -341,6 +343,11 @@ def export_report(
         if report.patient_id else None
     )
 
+    from app.models.organization import Organization
+    organization = db.query(Organization).filter(
+        Organization.organization_id == report.organization_id
+    ).first()
+
     if patient is None:
 
         class _StubPatient:
@@ -369,7 +376,8 @@ def export_report(
             ExportService.generate_docx_bytes(
                 report,
                 doctor,
-                patient
+                patient,
+                organization
             )
         )
 
@@ -431,7 +439,8 @@ def export_report(
                 ExportService.generate_pdf_bytes(
                     report,
                     doctor,
-                    patient
+                    patient,
+                    organization
                 )
             )
             filename = f"SOAP_Report_{safe_id}.pdf"

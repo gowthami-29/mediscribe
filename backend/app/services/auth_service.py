@@ -270,7 +270,7 @@ class AuthService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        allowed_fields = ["full_name", "phone", "timezone", "language_preference"]
+        allowed_fields = ["full_name", "phone", "timezone", "language_preference", "signature_url"]
         for field in allowed_fields:
             if field in data:
                 setattr(user, field, data[field])
@@ -278,6 +278,32 @@ class AuthService:
         db.commit()
         db.refresh(user)
         return user
+
+    @staticmethod
+    def update_organization(db: Session, org_id: str, data: dict):
+        if not org_id:
+            raise HTTPException(status_code=400, detail="User does not belong to any organization")
+            
+        org = db.query(Organization).filter(Organization.organization_id == org_id).first()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+
+        allowed_fields = ["hospital_name_override", "address", "contact_info", "logo_url", "letterhead_url"]
+        for field in allowed_fields:
+            if field in data:
+                setattr(org, field, data[field])
+        
+        db.commit()
+        db.refresh(org)
+        
+        return {
+            "organization_id": org.organization_id,
+            "hospital_name_override": org.hospital_name_override,
+            "address": org.address,
+            "contact_info": org.contact_info,
+            "logo_url": org.logo_url,
+            "letterhead_url": org.letterhead_url
+        }
 
     @staticmethod
     def update_security(db: Session, user_id: str, data: dict):

@@ -156,6 +156,17 @@ def update_security(
     return AuthService.update_security(db, current_user.user_id, data)
 
 
+@router.put("/organization")
+def update_organization(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Ensure only users belonging to the org can update it
+    # In a real app, you might also check if the user is an admin of the org
+    return AuthService.update_organization(db, current_user.organization_id, data)
+
+
 class OTPVerify(BaseModel):
     user_id: str
     otp: str

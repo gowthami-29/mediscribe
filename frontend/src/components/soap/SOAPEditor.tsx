@@ -18,6 +18,7 @@ export default function SOAPEditor({ consultationId }: Props) {
     objective: '', 
     assessment: '', 
     plan: '',
+    content: null as Record<string, any> | null,
     medications: [] as any[],
     follow_up_needed: false,
     follow_up_days: 0
@@ -44,6 +45,7 @@ export default function SOAPEditor({ consultationId }: Props) {
           objective: formatSoapField(data.objective),
           assessment: formatSoapField(data.assessment),
           plan: formatSoapField(data.plan),
+          content: data.content || null,
           medications: data.medications || [],
           follow_up_needed: !!data.follow_up_needed,
           follow_up_days: data.follow_up_days || 0
@@ -66,6 +68,7 @@ export default function SOAPEditor({ consultationId }: Props) {
       objective: formatSoapField(data.objective),
       assessment: formatSoapField(data.assessment),
       plan: formatSoapField(data.plan),
+      content: data.content || null,
       medications: data.medications || [],
       follow_up_needed: !!data.follow_up_needed,
       follow_up_days: data.follow_up_days || 0
@@ -118,6 +121,7 @@ export default function SOAPEditor({ consultationId }: Props) {
           objective: formatSoapField(data.objective),
           assessment: formatSoapField(data.assessment),
           plan: formatSoapField(data.plan),
+          content: data.content || null,
           medications: data.medications || [],
           follow_up_needed: !!data.follow_up_needed,
           follow_up_days: data.follow_up_days || 0
@@ -243,26 +247,50 @@ export default function SOAPEditor({ consultationId }: Props) {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {SECTIONS.map(({ key, label, color, placeholder }) => (
-          <div key={key}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
-            <textarea
-              value={fields[key as keyof typeof fields] as string}
-              onChange={(e) => setFields((f) => ({ ...f, [key]: e.target.value }))}
-              placeholder={placeholder}
-              className="form-control"
-              rows={4}
-              style={{ 
-                resize: 'vertical', 
-                fontFamily: 'inherit', 
-                lineHeight: 1.6,
-                background: reportStatus === 'approved' ? 'var(--surface-hover)' : 'var(--surface)',
-                cursor: reportStatus === 'approved' ? 'default' : 'text'
-              }}
-              readOnly={reportStatus === 'approved'}
-            />
-          </div>
-        ))}
+        {fields.content ? (
+          Object.entries(fields.content).map(([key, value]) => (
+            <div key={key}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#2980b9', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {key.replace(/_/g, ' ')}
+              </label>
+              <textarea
+                value={typeof value === 'string' ? value : JSON.stringify(value)}
+                onChange={(e) => setFields((f) => ({ ...f, content: { ...f.content, [key]: e.target.value } }))}
+                className="form-control"
+                rows={4}
+                style={{ 
+                  resize: 'vertical', 
+                  fontFamily: 'inherit', 
+                  lineHeight: 1.6,
+                  background: reportStatus === 'approved' ? 'var(--surface-hover)' : 'var(--surface)',
+                  cursor: reportStatus === 'approved' ? 'default' : 'text'
+                }}
+                readOnly={reportStatus === 'approved'}
+              />
+            </div>
+          ))
+        ) : (
+          SECTIONS.map(({ key, label, color, placeholder }) => (
+            <div key={key}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+              <textarea
+                value={fields[key as keyof typeof fields] as string}
+                onChange={(e) => setFields((f) => ({ ...f, [key]: e.target.value }))}
+                placeholder={placeholder}
+                className="form-control"
+                rows={4}
+                style={{ 
+                  resize: 'vertical', 
+                  fontFamily: 'inherit', 
+                  lineHeight: 1.6,
+                  background: reportStatus === 'approved' ? 'var(--surface-hover)' : 'var(--surface)',
+                  cursor: reportStatus === 'approved' ? 'default' : 'text'
+                }}
+                readOnly={reportStatus === 'approved'}
+              />
+            </div>
+          ))
+        )}
 
         {/* Medications Section */}
         <div style={{ marginTop: 10 }}>

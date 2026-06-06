@@ -21,6 +21,8 @@ export const authApi = {
 
   updateSecurity: (data: any) => apiClient.put('/auth/security', data).then((r) => r.data),
 
+  updateOrganization: (data: any) => apiClient.put('/auth/organization', data).then((r) => r.data),
+
   verifyOtp: (user_id: string, otp: string) =>
     apiClient.post('/auth/verify-otp', { user_id, otp }).then((r) => r.data),
 

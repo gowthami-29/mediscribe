@@ -12,6 +12,8 @@ import { useDictationStore } from '@/store/dictationStore'
 import { apiClient } from '@/api/client'
 import { enqueue } from '@/lib/offlineQueue'
 import toast from 'react-hot-toast'
+import { TemplateSelector } from '@/components/TemplateSelector'
+import { reportTemplatesApi } from '@/api/report_templates'
 
 // Extended window type for webkitSpeechRecognition
 declare global {
@@ -42,6 +44,7 @@ export default function DictationPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState('minimal')
 
   // MediaRecorder refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -80,6 +83,14 @@ export default function DictationPage() {
     queryKey: ['patients'],
     queryFn: () => patientsApi.list(),
   })
+
+  // Fetch templates for live preview
+  const { data: templates } = useQuery({
+    queryKey: ['report_templates'],
+    queryFn: () => reportTemplatesApi.list(),
+  })
+
+  const currentTemplate = templates?.find((t: any) => t.type_key === selectedTemplate)
 
   // Handle letterhead upload
   const handleLetterheadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -490,7 +501,7 @@ export default function DictationPage() {
         return
       }
 
-      const response = await dictationApi.transcribeAndReport(audioBlob, letterhead, patientContext)
+      const response = await dictationApi.transcribeAndReport(audioBlob, letterhead, patientContext, selectedTemplate)
       
       if (response.success && response.report) {
         setReport(response.report)
@@ -552,7 +563,7 @@ export default function DictationPage() {
     if (!report) return
     setPdfGenerating(true)
     try {
-      const blob = await dictationApi.generatePdfFromReport(report, letterhead)
+      const blob = await dictationApi.generatePdfFromReport(report, letterhead, selectedTemplate)
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -568,6 +579,54 @@ export default function DictationPage() {
       setPdfGenerating(false)
     }
   }
+
+  const getPreviewStyles = (templateId: string) => {
+    switch (templateId) {
+      case 'apollo':
+        return {
+          fontFamily: 'Arial, sans-serif',
+          headerColor: '#1e3a8a',
+          sectionColor: '#1e3a8a',
+          titleAlign: 'center' as const,
+          borderStyle: '2px solid #1e3a8a'
+        };
+      case 'corporate':
+        return {
+          fontFamily: '"Times New Roman", Times, serif',
+          headerColor: '#111827',
+          sectionColor: '#374151',
+          titleAlign: 'right' as const,
+          borderStyle: '1px solid #d1d5db'
+        };
+      case 'pediatric':
+        return {
+          fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif',
+          headerColor: '#0ea5e9',
+          sectionColor: '#0284c7',
+          titleAlign: 'center' as const,
+          borderStyle: '3px dashed #bae6fd'
+        };
+      case 'cardiology':
+        return {
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          headerColor: '#e11d48',
+          sectionColor: '#be123c',
+          titleAlign: 'center' as const,
+          borderStyle: '2px solid #fda4af'
+        };
+      case 'minimal':
+      default:
+        return {
+          fontFamily: 'Helvetica, Arial, sans-serif',
+          headerColor: 'var(--teal-darker)',
+          sectionColor: 'var(--teal)',
+          titleAlign: 'center' as const,
+          borderStyle: '1px solid #e5e7eb'
+        };
+    }
+  }
+
+  const previewStyles = getPreviewStyles(selectedTemplate);
 
   return (
     <div className="fade-in" style={{ paddingBottom: 40 }}>
@@ -669,6 +728,12 @@ export default function DictationPage() {
                   </div>
                 )}
               </div>
+              {/* Template Selector */}
+              <TemplateSelector 
+                selectedTemplate={selectedTemplate} 
+                onSelect={setSelectedTemplate} 
+                disabled={isRecording || isProcessing}
+              />
             </div>
           </div>
 
@@ -1004,11 +1069,11 @@ export default function DictationPage() {
                   background: '#ffffff',
                   padding: 24,
                   color: '#1f2937',
-                  fontFamily: 'Helvetica, Arial, sans-serif',
+                  fontFamily: previewStyles.fontFamily,
                 }}>
                   {/* Letterhead Preview Header */}
                   {letterheadPreview ? (
-                    <div style={{ borderBottom: '2px solid var(--teal)', paddingBottom: 14, marginBottom: 16 }}>
+                    <div style={{ borderBottom: previewStyles.borderStyle, paddingBottom: 14, marginBottom: 16 }}>
                       <img src={letterheadPreview} alt="Branded Banner" style={{ width: '100%', maxHeight: 80, objectFit: 'contain' }} />
                     </div>
                   ) : (
@@ -1028,7 +1093,7 @@ export default function DictationPage() {
 
                   {/* Consultation Details */}
                   <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: 12, marginBottom: 16 }}>
-                    <h2 style={{ fontSize: 18, color: 'var(--teal-darker)', fontWeight: 700, margin: '0 0 10px', textAlign: 'center', fontFamily: 'sans-serif' }}>
+                    <h2 style={{ fontSize: 18, color: previewStyles.headerColor, fontWeight: 700, margin: '0 0 10px', textAlign: previewStyles.titleAlign, fontFamily: previewStyles.fontFamily }}>
                       CLINICAL CONSULTATION SHEET
                     </h2>
                     
@@ -1043,117 +1108,139 @@ export default function DictationPage() {
                   {/* Editable Sections */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 13, color: '#1f2937' }}>
                     
-                    {report.indication && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Indication</div>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={report.indication}
-                          onChange={(e) => setReport({ ...report, indication: e.target.value })}
-                          style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
-                        />
-                      </div>
-                    )}
-
-                    {report.history && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>History</div>
-                        <textarea
-                          className="form-control" 
-                          value={report.history}
-                          rows={3}
-                          onChange={(e) => setReport({ ...report, history: e.target.value })}
-                          style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
-                        />
-                      </div>
-                    )}
-
-                    {report.findings && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Findings & Vitals</div>
-                        <textarea
-                          className="form-control" 
-                          value={report.findings}
-                          rows={3}
-                          onChange={(e) => setReport({ ...report, findings: e.target.value })}
-                          style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
-                        />
-                      </div>
-                    )}
-
-                    {report.impression && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Diagnosis & Clinical Impression</div>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={report.impression}
-                          onChange={(e) => setReport({ ...report, impression: e.target.value })}
-                          style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
-                        />
-                      </div>
-                    )}
-
-                    {report.plan && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Treatment Plan</div>
-                        <textarea
-                          className="form-control" 
-                          value={report.plan}
-                          rows={3}
-                          onChange={(e) => setReport({ ...report, plan: e.target.value })}
-                          style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
-                        />
-                      </div>
-                    )}
-
-                    {report.medications && report.medications.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Prescribed Medications</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {report.medications.map((med, index) => (
+                    {report.content ? (
+                      Object.entries(report.content).map(([key, value]) => (
+                        <div key={key}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>
+                            {key.replace(/_/g, ' ')}
+                          </div>
+                          <textarea
+                            className="form-control" 
+                            value={typeof value === 'string' ? value : JSON.stringify(value)}
+                            rows={3}
+                            onChange={(e) => {
+                              const newContent = { ...report.content, [key]: e.target.value }
+                              setReport({ ...report, content: newContent })
+                            }}
+                            style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        {report.indication && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Indication</div>
                             <input 
-                              key={index}
                               type="text" 
                               className="form-control" 
-                              value={med}
-                              onChange={(e) => {
-                                const newMeds = [...report.medications]
-                                newMeds[index] = e.target.value
-                                setReport({ ...report, medications: newMeds })
-                              }}
-                              style={{ background: 'transparent', padding: '4px 8px', fontSize: 12.5 }}
+                              value={report.indication}
+                              onChange={(e) => setReport({ ...report, indication: e.target.value })}
+                              style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
                             />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
-                    {report.follow_up && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Follow-up</div>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={report.follow_up}
-                          onChange={(e) => setReport({ ...report, follow_up: e.target.value })}
-                          style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
-                        />
-                      </div>
-                    )}
+                        {report.history && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>History</div>
+                            <textarea
+                              className="form-control" 
+                              value={report.history}
+                              rows={3}
+                              onChange={(e) => setReport({ ...report, history: e.target.value })}
+                              style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+                            />
+                          </div>
+                        )}
 
-                    {report.notes && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 3 }}>Additional Notes</div>
-                        <textarea
-                          className="form-control" 
-                          value={report.notes}
-                          rows={2}
-                          onChange={(e) => setReport({ ...report, notes: e.target.value })}
-                          style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
-                        />
-                      </div>
+                        {report.findings && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Findings & Vitals</div>
+                            <textarea
+                              className="form-control" 
+                              value={report.findings}
+                              rows={3}
+                              onChange={(e) => setReport({ ...report, findings: e.target.value })}
+                              style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+                            />
+                          </div>
+                        )}
+
+                        {report.impression && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Diagnosis & Clinical Impression</div>
+                            <input 
+                              type="text" 
+                              className="form-control" 
+                              value={report.impression}
+                              onChange={(e) => setReport({ ...report, impression: e.target.value })}
+                              style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
+                            />
+                          </div>
+                        )}
+
+                        {report.plan && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Treatment Plan</div>
+                            <textarea
+                              className="form-control" 
+                              value={report.plan}
+                              rows={3}
+                              onChange={(e) => setReport({ ...report, plan: e.target.value })}
+                              style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+                            />
+                          </div>
+                        )}
+
+                        {report.medications && report.medications.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Prescribed Medications</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {report.medications.map((med, index) => (
+                                <input 
+                                  key={index}
+                                  type="text" 
+                                  className="form-control" 
+                                  value={med}
+                                  onChange={(e) => {
+                                    const newMeds = [...(report.medications || [])]
+                                    newMeds[index] = e.target.value
+                                    setReport({ ...report, medications: newMeds })
+                                  }}
+                                  style={{ background: 'transparent', padding: '4px 8px', fontSize: 12.5 }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {report.follow_up && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Follow-up</div>
+                            <input 
+                              type="text" 
+                              className="form-control" 
+                              value={report.follow_up}
+                              onChange={(e) => setReport({ ...report, follow_up: e.target.value })}
+                              style={{ background: 'transparent', padding: '6px 10px', fontSize: 13 }}
+                            />
+                          </div>
+                        )}
+
+                        {report.notes && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>Additional Notes</div>
+                            <textarea
+                              className="form-control" 
+                              value={report.notes}
+                              rows={2}
+                              onChange={(e) => setReport({ ...report, notes: e.target.value })}
+                              style={{ background: 'transparent', padding: '8px 10px', fontSize: 13 }}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -1182,6 +1269,90 @@ export default function DictationPage() {
                     </>
                   )}
                 </button>
+              </div>
+            ) : currentTemplate ? (
+              <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  boxShadow: 'var(--shadow-sm)',
+                  background: '#ffffff',
+                  padding: 24,
+                  color: '#1f2937',
+                  fontFamily: previewStyles.fontFamily,
+                  opacity: 0.6,
+                  pointerEvents: 'none'
+                }}>
+                  {/* Letterhead Preview Header */}
+                  {letterheadPreview ? (
+                    <div style={{ borderBottom: previewStyles.borderStyle, paddingBottom: 14, marginBottom: 16 }}>
+                      <img src={letterheadPreview} alt="Branded Banner" style={{ width: '100%', maxHeight: 80, objectFit: 'contain' }} />
+                    </div>
+                  ) : (
+                    <div style={{
+                      border: '2px dashed var(--border)',
+                      borderRadius: 8,
+                      padding: '14px 20px',
+                      textAlign: 'center',
+                      background: 'var(--surface-hover)',
+                      marginBottom: 16,
+                      fontSize: 12,
+                      color: 'var(--text-3)',
+                    }}>
+                      [Hospital/Clinic Letterhead Banner will render here]
+                    </div>
+                  )}
+
+                  {/* Consultation Details Placeholder */}
+                  <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: 12, marginBottom: 16 }}>
+                    <h2 style={{ fontSize: 18, color: previewStyles.headerColor, fontWeight: 700, margin: '0 0 10px', textAlign: previewStyles.titleAlign, fontFamily: previewStyles.fontFamily }}>
+                      CLINICAL CONSULTATION SHEET
+                    </h2>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px 16px', fontSize: 12, color: '#374151' }}>
+                      <div><strong>Patient:</strong> [Patient Name]</div>
+                      <div><strong>Date:</strong> {new Date().toLocaleDateString()}</div>
+                      <div><strong>Age / Gender:</strong> [Age] / [Gender]</div>
+                      <div><strong>Consultant:</strong> [Doctor Name]</div>
+                    </div>
+                  </div>
+
+                  {/* Fields Placeholder */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 13, color: '#1f2937' }}>
+                    {currentTemplate.schema_json?.fields?.map((field: any, idx: number) => (
+                      <div key={idx}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: previewStyles.sectionColor, textTransform: 'uppercase', marginBottom: 3 }}>
+                          {field.label || field.name.replace(/_/g, ' ')}
+                        </div>
+                        <div style={{
+                          background: 'transparent',
+                          border: '1px dashed #ccc',
+                          borderRadius: '4px',
+                          padding: '8px 10px',
+                          fontSize: 13,
+                          color: '#9ca3af',
+                          minHeight: field.type === 'textarea' ? '60px' : '36px',
+                          display: 'flex',
+                          alignItems: 'flex-start'
+                        }}>
+                          [Content will be generated here]
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Signatures Placeholder */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 32, borderTop: '1px solid #eee', paddingTop: 16 }}>
+                    <div style={{ textAlign: 'center', fontSize: 11, color: '#6b7280', width: 200 }}>
+                      <div style={{ borderBottom: '1px solid #ccc', height: 36, marginBottom: 6 }}></div>
+                      Doctor Signature / Stamp
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', color: 'var(--text-4)', fontSize: 13 }}>
+                  Start dictating to fill this template with your clinical notes.
+                </div>
               </div>
             ) : (
               <div className="empty-state" style={{ padding: '80px 20px' }}>

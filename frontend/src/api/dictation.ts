@@ -11,9 +11,11 @@ export interface DictationReport {
   findings: string
   impression: string
   plan: string
-  medications: string[]
-  follow_up: string
-  notes: string
+  medications?: string[]
+  follow_up?: string
+  notes?: string
+  content?: Record<string, any>
+  report_type?: string
   _error?: string
 }
 
@@ -35,7 +37,8 @@ export const dictationApi = {
   transcribeAndReport: async (
     audioBlob: Blob,
     letterheadFile?: File | null,
-    patientContext?: string
+    patientContext?: string,
+    templateId?: string
   ): Promise<DictationResult> => {
     const form = new FormData()
     // Explicitly reconstruct the Blob to ensure type is preserved when retrieved from IDB
@@ -48,6 +51,9 @@ export const dictationApi = {
       form.append('letterhead', letterheadFile, letterheadFile.name)
     }
     form.append('patient_context', patientContext || '')
+    if (templateId) {
+      form.append('template_id', templateId)
+    }
 
     const res = await apiClient.post('/dictation/transcribe-and-report', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -62,7 +68,8 @@ export const dictationApi = {
   generatePdf: async (
     audioBlob: Blob,
     letterheadFile?: File | null,
-    patientContext?: string
+    patientContext?: string,
+    templateId?: string
   ): Promise<Blob> => {
     const form = new FormData()
     form.append('audio', audioBlob, 'recording.webm')
@@ -70,6 +77,7 @@ export const dictationApi = {
       form.append('letterhead', letterheadFile, letterheadFile.name)
     }
     form.append('patient_context', patientContext || '')
+    form.append('template_id', templateId || 'minimal')
 
     const res = await apiClient.post('/dictation/generate-pdf', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -84,7 +92,8 @@ export const dictationApi = {
    */
   generatePdfFromReport: async (
     report: DictationReport,
-    letterheadFile?: File | null
+    letterheadFile?: File | null,
+    templateId?: string
   ): Promise<Blob> => {
     const form = new FormData()
     // Send report as JSON field
@@ -92,6 +101,7 @@ export const dictationApi = {
     if (letterheadFile) {
       form.append('letterhead', letterheadFile, letterheadFile.name)
     }
+    form.append('template_id', templateId || 'minimal')
 
     const res = await apiClient.post('/dictation/generate-pdf-from-report', form, {
       headers: { 'Content-Type': 'multipart/form-data' },

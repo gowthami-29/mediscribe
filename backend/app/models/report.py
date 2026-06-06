@@ -41,6 +41,10 @@ class ReportVersion(Base):
     medications = Column(JSON, nullable=True)
     key_entities = Column(JSON, nullable=True)
 
+    # Dynamic fields
+    report_type = Column(String, default="soap_note")
+    content = Column(JSON, nullable=True)
+
     modified_by = Column(
         String,
         ForeignKey("users.user_id"),
@@ -91,6 +95,17 @@ class Report(Base):
         Integer,
         default=1,
         nullable=False
+    )
+
+    # Dynamic Template Fields
+    report_type = Column(
+        String,
+        default="soap_note"
+    )
+
+    content = Column(
+        JSON,
+        nullable=True
     )
 
     # SOAP sections

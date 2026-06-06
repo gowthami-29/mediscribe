@@ -78,6 +78,7 @@ from app.models.patient import Patient
 from app.models.subscription import OrganizationSubscription
 from app.models.consultation import Consultation
 from app.models.report import Report
+from app.models.report_template import ReportTemplate
 from app.models.analysis import Analysis
 from app.models.audit import AuditLog
 from app.models.subscription import OrganizationSubscription
@@ -99,6 +100,7 @@ from app.api.dictation import router as dictation_router
 from app.api.api_keys import router as api_keys
 from app.api.admin import router as admin_router
 from app.api.external_radiology import router as external_radiology_router
+from app.api.report_template import router as report_template_router
 from app.api import patient_portal
 
 
@@ -138,6 +140,43 @@ def on_startup():
             logger.info("Migrating: adding version column to reports...")
             conn.execute(text("ALTER TABLE reports ADD COLUMN version INTEGER DEFAULT 1 NOT NULL"))
             logger.info("Migration complete: version added to reports.")
+
+        # Add dynamic report fields to reports
+        if "report_type" not in report_cols:
+            logger.info("Migrating: adding report_type and content to reports...")
+            conn.execute(text("ALTER TABLE reports ADD COLUMN report_type VARCHAR DEFAULT 'soap_note'"))
+            # For JSON column, fallback to VARCHAR if sqlite has issues, but JSON usually works in recent sqlite
+            try:
+                conn.execute(text("ALTER TABLE reports ADD COLUMN content JSON"))
+            except Exception:
+                conn.execute(text("ALTER TABLE reports ADD COLUMN content VARCHAR"))
+            logger.info("Migration complete: dynamic fields added to reports.")
+            
+        # Add dynamic report fields to report_versions
+        version_cols = [c["name"] for c in inspector.get_columns("report_versions")]
+        if "report_type" not in version_cols:
+            logger.info("Migrating: adding report_type and content to report_versions...")
+            conn.execute(text("ALTER TABLE report_versions ADD COLUMN report_type VARCHAR DEFAULT 'soap_note'"))
+            try:
+                conn.execute(text("ALTER TABLE report_versions ADD COLUMN content JSON"))
+            except Exception:
+                conn.execute(text("ALTER TABLE report_versions ADD COLUMN content VARCHAR"))
+
+        # Add branding columns to organizations
+        org_cols = [c["name"] for c in inspector.get_columns("organizations")]
+        if "logo_url" not in org_cols:
+            logger.info("Migrating: adding branding fields to organizations...")
+            conn.execute(text("ALTER TABLE organizations ADD COLUMN logo_url VARCHAR"))
+            conn.execute(text("ALTER TABLE organizations ADD COLUMN letterhead_url VARCHAR"))
+            conn.execute(text("ALTER TABLE organizations ADD COLUMN address VARCHAR"))
+            conn.execute(text("ALTER TABLE organizations ADD COLUMN contact_info VARCHAR"))
+            conn.execute(text("ALTER TABLE organizations ADD COLUMN hospital_name_override VARCHAR"))
+
+        # Add signature to users
+        user_cols = [c["name"] for c in inspector.get_columns("users")]
+        if "signature_url" not in user_cols:
+            logger.info("Migrating: adding signature_url to users...")
+            conn.execute(text("ALTER TABLE users ADD COLUMN signature_url VARCHAR"))
             
         # Add new radiology Phase 3 columns if missing
         if "radiology_reports" in inspector.get_table_names():
@@ -148,6 +187,15 @@ def on_startup():
                 conn.execute(text("ALTER TABLE radiology_reports ADD COLUMN critical_findings VARCHAR DEFAULT 'false'"))
                 conn.execute(text("ALTER TABLE radiology_reports ADD COLUMN follow_up_recommendation TEXT"))
                 logger.info("Migration complete: Phase 3 columns added.")
+                
+    # Seed default templates
+    try:
+        from app.db.seed import seed_default_templates
+        from app.db.session import SessionLocal
+        with SessionLocal() as session:
+            seed_default_templates(session)
+    except Exception as e:
+        logger.warning(f"Template seeding skipped or failed: {e}")
     # -------------------------------------------------------------------
 
 api_v1 = APIRouter(prefix="/api/v1")
@@ -165,6 +213,7 @@ api_v1.include_router(radiology_router,prefix="/radiology",tags=["Radiology"])
 api_v1.include_router(api_keys,prefix="/api-keys",tags=["API Keys"])
 api_v1.include_router(admin_router,prefix="/admin",  tags=["Admin"])
 api_v1.include_router(external_radiology_router,prefix="/external/radiology",tags=["External Radiology"])
+api_v1.include_router(report_template_router, prefix="/report-templates", tags=["Report Templates"])
 api_v1.include_router(
     patient_portal.router,
     prefix="/patient",

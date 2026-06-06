@@ -5,6 +5,7 @@ from datetime import datetime
 
 class SoapReportCreate(BaseModel):
     consultation_id: str
+    report_type: Optional[str] = "soap_note"
 
 
 class SoapReportUpdate(BaseModel):
@@ -12,6 +13,9 @@ class SoapReportUpdate(BaseModel):
     objective: Optional[str] = None
     assessment: Optional[str] = None
     plan: Optional[str] = None
+
+    report_type: Optional[str] = None
+    content: Optional[Dict[str, Any]] = None
 
     medications: Optional[List[Dict[str, Any]]] = None
 
@@ -31,6 +35,10 @@ class SoapReport(BaseModel):
     objective: Optional[str] = None
     assessment: Optional[str] = None
     plan: Optional[str] = None
+    
+    report_type: Optional[str] = "soap_note"
+    content: Optional[Dict[str, Any]] = None
+    
     medications: Optional[List[Dict[str, Any]]] = None
     follow_up_needed: Optional[bool] = False
     follow_up_days: Optional[int] = None

@@ -73,6 +73,7 @@ async def generate_pdf(
     audio: UploadFile = File(..., description="Recorded audio file"),
     letterhead: Optional[UploadFile] = File(None, description="Clinic letterhead image"),
     patient_context: str = Form("", description="Optional historical patient context"),
+    template_id: str = Form("minimal", description="Template style ID"),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -113,10 +114,18 @@ async def generate_pdf(
         report["doctor_name"] = current_user.full_name
 
         # Step 2: Build PDF
+        # Fetch template config from org if needed, here we use defaults
+        template_config = {
+            "primary_color": current_user.organization.primary_color if hasattr(current_user, 'organization') and current_user.organization else None,
+            "font_family": current_user.organization.font_family if hasattr(current_user, 'organization') and current_user.organization else None,
+            "footer_text": current_user.organization.footer_text if hasattr(current_user, 'organization') and current_user.organization else None,
+        }
         pdf_bytes = DictationService.generate_pdf(
             report=report,
             letterhead_bytes=letterhead_bytes,
             letterhead_ext=letterhead_ext,
+            template_id=template_id,
+            template_config={k: v for k, v in template_config.items() if v is not None}
         )
 
         # Return as downloadable PDF
@@ -139,6 +148,7 @@ async def generate_pdf(
 async def generate_pdf_from_report(
     report_data: str = Form(..., description="JSON string of the report dict"),
     letterhead: Optional[UploadFile] = File(None),
+    template_id: str = Form("minimal", description="Template style ID"),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -159,10 +169,18 @@ async def generate_pdf_from_report(
             lh_filename = letterhead.filename or "letterhead.png"
             letterhead_ext = lh_filename.rsplit(".", 1)[-1].lower() if "." in lh_filename else "png"
 
+        template_config = {
+            "primary_color": current_user.organization.primary_color if hasattr(current_user, 'organization') and current_user.organization else None,
+            "font_family": current_user.organization.font_family if hasattr(current_user, 'organization') and current_user.organization else None,
+            "footer_text": current_user.organization.footer_text if hasattr(current_user, 'organization') and current_user.organization else None,
+        }
+        
         pdf_bytes = DictationService.generate_pdf(
             report=report_dict,
             letterhead_bytes=letterhead_bytes,
             letterhead_ext=letterhead_ext,
+            template_id=template_id,
+            template_config={k: v for k, v in template_config.items() if v is not None}
         )
 
         return Response(

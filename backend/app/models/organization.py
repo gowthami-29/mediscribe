@@ -46,6 +46,58 @@ class Organization(Base):
         default=10
     )
 
+    # Template Customization Fields
+    default_template_id = Column(
+        String,
+        default="minimal"
+    )
+    
+    primary_color = Column(
+        String,
+        default="#0d9488" # Teal
+    )
+    
+    secondary_color = Column(
+        String,
+        default="#374151" # Gray
+    )
+    
+    font_family = Column(
+        String,
+        default="Helvetica"
+    )
+    
+    footer_text = Column(
+        String,
+        nullable=True
+    )
+
+    # Branding Fields
+    logo_url = Column(
+        String,
+        nullable=True
+    )
+
+    letterhead_url = Column(
+        String,
+        nullable=True
+    )
+
+    address = Column(
+        String,
+        nullable=True
+    )
+
+    contact_info = Column(
+        String,
+        nullable=True
+    )
+
+    hospital_name_override = Column(
+        String,
+        nullable=True
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now()

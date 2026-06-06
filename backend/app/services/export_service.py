@@ -96,7 +96,8 @@ class ExportService:
     def generate_pdf_bytes(
         report: Report,
         doctor: User,
-        patient: Patient
+        patient: Patient,
+        organization=None
     ) -> bytes:
 
         buffer = io.BytesIO()
@@ -166,17 +167,28 @@ class ExportService:
 
         story = []
 
-        # Header
+        # Hospital Branding Header
+        hosp_name = getattr(organization, "hospital_name_override", None) or getattr(organization, "name", "ArogyaScribe") if organization else "ArogyaScribe"
+        hosp_address = getattr(organization, "address", None)
+        hosp_contact = getattr(organization, "contact_info", None)
+        
         story.append(
             Paragraph(
-                "ArogyaScribe",
+                hosp_name,
                 title_style
             )
         )
 
+        if hosp_address:
+            story.append(Paragraph(hosp_address, label_style))
+        if hosp_contact:
+            story.append(Paragraph(hosp_contact, label_style))
+
+        report_type_display = report.report_type.replace('_', ' ').title() if report.report_type else "Clinical Consultation"
+
         story.append(
             Paragraph(
-                "Clinical SOAP Report",
+                f"{report_type_display} Report",
                 styles["Heading2"]
             )
         )
@@ -250,13 +262,16 @@ class ExportService:
             )
         )
 
-        # SOAP sections
-        sections = [
-            ("S — Subjective", report.subjective),
-            ("O — Objective", report.objective),
-            ("A — Assessment", report.assessment),
-            ("P — Plan", report.plan),
-        ]
+        # Dynamic Sections
+        if report.content and isinstance(report.content, dict):
+            sections = [(k.replace("_", " ").title(), v) for k, v in report.content.items()]
+        else:
+            sections = [
+                ("S — Subjective", report.subjective),
+                ("O — Objective", report.objective),
+                ("A — Assessment", report.assessment),
+                ("P — Plan", report.plan),
+            ]
 
         for title, content in sections:
 
@@ -387,6 +402,13 @@ class ExportService:
                     body_style
                 )
             )
+
+        # Signature block
+        story.append(Spacer(1, 1.0 * cm))
+        story.append(Paragraph("___________________________", body_style))
+        story.append(Paragraph(f"Dr. {doctor_name}", body_style))
+        if license_no:
+            story.append(Paragraph(f"License: {license_no}", body_style))
 
         # Footer
         story.append(
@@ -546,7 +568,8 @@ class ExportService:
     def generate_docx_bytes(
         report: Report,
         doctor: User,
-        patient: Patient
+        patient: Patient,
+        organization=None
     ) -> bytes:
 
         doc = Document()
@@ -577,8 +600,11 @@ class ExportService:
             getattr(doctor, "license_number", None)
         )
 
+        hosp_name = getattr(organization, "hospital_name_override", None) or getattr(organization, "name", "ArogyaScribe") if organization else "ArogyaScribe"
+        report_type_display = report.report_type.replace('_', ' ').title() if report.report_type else "Clinical Consultation"
+
         title = doc.add_heading(
-            "ArogyaScribe — Clinical SOAP Report",
+            f"{hosp_name} — {report_type_display} Report",
             0
         )
 
@@ -594,13 +620,16 @@ class ExportService:
 
         doc.add_paragraph()
 
-        # SOAP sections
-        sections = [
-            ("S — Subjective", report.subjective),
-            ("O — Objective", report.objective),
-            ("A — Assessment", report.assessment),
-            ("P — Plan", report.plan),
-        ]
+        # Dynamic sections
+        if report.content and isinstance(report.content, dict):
+            sections = [(k.replace("_", " ").title(), v) for k, v in report.content.items()]
+        else:
+            sections = [
+                ("S — Subjective", report.subjective),
+                ("O — Objective", report.objective),
+                ("A — Assessment", report.assessment),
+                ("P — Plan", report.plan),
+            ]
 
         for title_text, content in sections:
 
