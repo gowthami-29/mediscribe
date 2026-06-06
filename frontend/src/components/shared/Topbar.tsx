@@ -180,7 +180,7 @@ export default function Topbar() {
 
         {/* User Avatar */}
         <div
-          onClick={() => navigate('/app/settings')}
+          onClick={() => navigate(pathname.startsWith('/organization') ? '/organization/settings' : '/app/settings')}
           title="Profile & Settings"
           style={{
             width: 36, height: 36, borderRadius: 10, cursor: 'pointer', flexShrink: 0,

@@ -2,8 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { auditApi } from '@/api/audit'
 import { format } from 'date-fns'
 import Badge from '@/components/shared/Badge'
-import { Download } from 'lucide-react'
-import toast from 'react-hot-toast'
 
 export default function AuditLogTable() {
   const { data, isLoading } = useQuery({
@@ -23,24 +21,8 @@ export default function AuditLogTable() {
     status: e.status,
   }))
 
-  const handleExport = async () => {
-    try {
-      await auditApi.exportCsv()
-      toast.success('Export started')
-    } catch {
-      toast.error('CSV export not yet available')
-    }
-  }
-
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button
-          onClick={handleExport}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, cursor: 'pointer', color: 'var(--text-2)', fontWeight: 500 }}>
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
       <div className="card" style={{ overflow: 'hidden' }}>
         <div className="table-container">
           <table className="data-table">

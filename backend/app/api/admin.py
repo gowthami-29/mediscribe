@@ -122,6 +122,56 @@ def get_doctors(
     return doctors
 
 
+@router.get("/organizations/{org_id}/doctors")
+def get_org_doctors_super_admin(
+    org_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+    doctors = db.query(User).filter(
+        User.organization_id == org_id,
+        User.role == "practitioner"
+    ).all()
+    return doctors
+
+@router.get("/organizations/{org_id}/patients")
+def get_org_patients_super_admin(
+    org_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+    patients = db.query(Patient).filter(Patient.organization_id == org_id).all()
+    return patients
+
+class ResetPasswordPayload(BaseModel):
+    password: str
+
+@router.put("/organizations/{org_id}/reset-password")
+def reset_org_admin_password(
+    org_id: str,
+    payload: ResetPasswordPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+    admin_user = db.query(User).filter(
+        User.organization_id == org_id,
+        User.role == "organization_admin"
+    ).first()
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="Organization admin not found")
+    
+    admin_user.password_hash = hash_password(payload.password)
+    admin_user.failed_login_attempts = 0
+    admin_user.locked_until = None
+    db.commit()
+    return {"message": "Organization admin password updated successfully"}
+
 @router.get("/doctors/{doctor_id}/patients")
 def get_doctor_patients(
     doctor_id: str,

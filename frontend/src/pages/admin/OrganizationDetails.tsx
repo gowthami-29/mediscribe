@@ -231,6 +231,45 @@ export default function OrganizationDetails() {
         </div>
       </div>
 
+      {/* Administrative Actions */}
+      <div className="card" style={{ padding: 20, marginTop: 24 }}>
+        <h3 style={{ color: 'var(--rose)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          Administrative Actions
+        </h3>
+        <div style={{ marginTop: 16 }}>
+          <h4>Reset Organization Admin Password</h4>
+          <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 16 }}>
+            Set a new password for this organization's administrator account.
+          </p>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <input
+              type="password"
+              placeholder="New Admin Password"
+              className="input-field"
+              style={{ maxWidth: 300 }}
+              id="new-admin-password"
+            />
+            <button
+              className="btn btn-primary"
+              style={{ background: 'var(--rose)' }}
+              onClick={async () => {
+                const input = document.getElementById('new-admin-password') as HTMLInputElement;
+                if (!input.value) return alert('Please enter a new password');
+                try {
+                  await adminApi.resetOrganizationAdminPassword(organizationId!, input.value);
+                  alert('Password reset successfully');
+                  input.value = '';
+                } catch (e: any) {
+                  alert(e.response?.data?.detail || 'Failed to reset password');
+                }
+              }}
+            >
+              Reset Password
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 }
