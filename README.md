@@ -114,3 +114,4 @@ The frontend will be accessible at `http://localhost:5173`.
 
 Developed by **Thummala Khalida** and **Gowthami Kanchi**.  
 *ArogyaScribe — Empowering Healthcare through AI.*
+a
