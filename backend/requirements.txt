@@ -22,3 +22,4 @@ pydicom
 langchain
 langchain-openai
 tiktoken
+numpy
