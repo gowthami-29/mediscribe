@@ -112,6 +112,6 @@ The frontend will be accessible at `http://localhost:5173`.
 
 ## 📄 License & Author
 
-Developed by **Thummala Khalida** and **Gowthami Kanchi**.  
+Developed by **Gowthami Kanchi**.  
 *ArogyaScribe — Empowering Healthcare through AI.*
 a
